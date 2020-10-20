@@ -1,0 +1,26 @@
+name: "synthetic_loss-pure-rec"
+
+data:
+  train: "./data/mnist_data/"
+  test: "'./data/mnist_data/"
+
+#test:
+
+train:
+  batch_size: 128
+  num_epochs: 20
+  lambda: 0.001
+  beta: 0.001
+  regularization: "both"
+  lr: 0.0001
+
+model:
+  encoder:
+    layer_sizes: [100, 64, 32]
+    last_nn_layer: "Identity"
+
+  decoder:
+    layer_sizes: [32, 64, 100]
+
+  input_dim: 100
+  latent_dim: 2
