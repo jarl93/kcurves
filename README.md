@@ -34,23 +34,23 @@ tensorboard --logdir ./data/synthetic/plots
 Then you have to go to localhost in the indicated port after running the above command.
 
 # Train
-In order to make the training run the main script in mode train by executing the following command:
+In order to do the training run the main script in mode train by executing the following command:
 
 ```bash
 python3 kcurves train ./configs/synthetic_identity_both.yaml
 ```
 
-In this case the default configuration file is "./configs/synthetic_identity_both.yaml" but you can create a new one or modify this one.
+In this case the default configuration file is "./configs/synthetic_identity_both.yaml", but you can create a new one or modify this one.
 
 # Test
 
-In order to make the testing run the main script in mode test by executing the following command:
+In order to do the testing run the main script in mode test by executing the following command:
 
 ```bash
 python3 kcurves test ./configs/synthetic_identity_both.yaml  
 ```
 
-In this case the default configuration file is "./configs/synthetic_identity_both.yaml" but you can create a new one or modify this one.
+In this case the default configuration file is "./configs/synthetic_identity_both.yaml", but you can create a new one or modify this one.
 
 
 # Visualize the encoder output
