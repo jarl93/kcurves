@@ -7,8 +7,8 @@ This project is an attempt to use curves (functions) and deep auto-encoders to d
 
 # Generate synthetic data
 
-The synthetic data will be generated based on different sinusoidal functions (2 by default) parametrized by amplitud, frequency, shift and domain where they are defined, once the functions are defined, some gaussian noise will be added (all this paramters can be specified in the config file). 
-Then to generate the training and test data several non-linear and linear transformations will be applied to map the data to a higher-dimensional space. Then the autoencoder will take this higher-dimensional as input for training and testing.
+The synthetic data will be generated based on different sinusoidal functions (2 by default) parametrized by amplitud, frequency, shift and domain where they are defined, once the functions are defined, some gaussian noise will be added (all this parameters can be specified in the config file). 
+Then to generate the training and test data several non-linear and linear transformations will be applied to map the data to a higher-dimensional space. Then the autoencoder will take this higher-dimensional data as input for training and testing.
 
 In order to generate synthetic data run the script generate_synthetic.py with the following command:
 
@@ -18,7 +18,7 @@ python3 kcurves/generate_synthetic.py ./configs/synthetic_generation.yaml
 
 **Note:** All the commands should be executed from the main folder of your project (where you executed the git clone).
 
-The default configuration file "./configs/synthetic_generation.yaml" is a configuration file to set the functions parameters to generate the data. You can create your own file or modify default one, if you create a new one please change the last parameter when executing the script.
+The default configuration file "./configs/synthetic_generation.yaml" is a configuration file to set the functions parameters to generate the data. You can create your own file or modify default one, if you create a new one don't forget to change the last parameter when executing the script.
 
 
 # Visualize the data generated
@@ -50,7 +50,7 @@ In this case the default configuration file is "./configs/synthetic_identity_bot
 
 
 # Visualize the encoder output
-After do the training and testing you might want to see the results. In order to visualize the encoder output you need to run tensorboard as follows:
+After do the training and testing you might want to see how the latent space looks like. In order to visualize the encoder output you need to run tensorboard as follows:
 
 ```bash
 tensorboard --logdir ./models/synthetic
