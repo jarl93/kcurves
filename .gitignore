@@ -1,4 +1,5 @@
 .DS_store
 k-curves.ipynb
+.idea
 short-code-testing.ipynb
 kcurves/__pycache__/
