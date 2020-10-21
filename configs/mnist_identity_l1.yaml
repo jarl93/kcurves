@@ -1,0 +1,42 @@
+name: "mnist_identity_l1"
+
+data:
+  data_set: "mnist"
+  train: "./data/mnist_data"
+  test: "./data/mnist_data"
+  num_classes: 10
+
+train:
+  batch_size: 128
+  num_epochs: 10
+  lambda: 0.001
+  beta: 0.0
+  regularization: "l1"
+  lr: 0.001
+  batch_frequency_loss: 10
+
+test:
+  #mode_forced: "train"
+  mode_forced: "test"
+  batch_size: 128
+
+model:
+  path: "./models/mnist/"
+  name: "model_identity_l1"
+  save: True
+  device: 'cpu' # it could be 'cpu' or 'cuda'
+  encoder:
+    layer_sizes: [784, 512, 256]
+    last_nn_layer: "Identity"  # it could be on from {'Identity', 'Softmax', 'ReLU'}
+
+  decoder:
+    layer_sizes: [256, 512, 784]
+
+  input_dim: 784
+  latent_dim: 16
+
+tracing:
+  show_images: True
+  images_to_show: 10
+  visualize_latent: True
+  batch_frequency: 100

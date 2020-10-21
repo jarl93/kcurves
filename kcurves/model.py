@@ -63,6 +63,8 @@ class Encoder(nn.Module):
         # Output layer from the encoder
         self.out = nn.Linear(layer_sizes[-1], latent_dim)
 
+        self.last_nn_layer_encoder_name = last_nn_layer_encoder
+
         if last_nn_layer_encoder == 'ReLU':
             self.last_nn_layer_encoder = nn.ReLU()
         elif last_nn_layer_encoder == 'Identity':

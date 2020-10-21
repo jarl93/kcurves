@@ -1,33 +1,40 @@
 # libraries
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.decomposition import PCA
+import yaml
+from torch.utils.tensorboard import SummaryWriter
 
-
-def imshow(img_original, img_reconstructed):
+def imshow(list_images):
     """
     Plots the original image and the reconstructed image side by side.
     Arguments:
         img_original: original image from the dataset.
         img_reconstructed: reconstructed image, output of the autoencoder.
     """
-    f = plt.figure()
+    num_images = len(list_images)
+    fig = plt.figure(figsize=(10, 10))
 
-    # plot the original image
-    f.add_subplot(1, 2, 1)
-    plt.imshow(img_original, cmap='gray')
-    plt.title("Original image")
-    plt.xticks([])
-    plt.yticks([])
-    # plot the reconstructed image
-    f.add_subplot(1, 2, 2)
-    plt.imshow(img_reconstructed, cmap='gray')
-    plt.title("Reconstructed image")
-    plt.xticks([])
-    plt.yticks([])
-    plt.show()
+    for idx_img, pair_image in enumerate(list_images):
+        img_original, img_reconstructed = pair_image
 
-    return None
+        # plot the original image
+        ax1 = fig.add_subplot(num_images, 2, 2*idx_img+1)
+        plt.imshow(img_original, cmap='gray')
+        if idx_img == 0:
+            ax1.set_title("Original image")
+        ax1.set_xticks([])
+        ax1.set_yticks([])
+        # plot the reconstructed image
+        ax2 = fig.add_subplot(num_images, 2, 2*idx_img + 2)
+        plt.imshow(img_reconstructed, cmap='gray')
+        if idx_img == 0:
+            ax2.set_title("Reconstructed image")
+        ax2.set_xticks([])
+        ax2.set_yticks([])
+
+    return fig
 
 def plot_X2D_visualization(X_2D, labels, title, num_classes, cluster_centers=None):
     """
@@ -39,21 +46,23 @@ def plot_X2D_visualization(X_2D, labels, title, num_classes, cluster_centers=Non
         num_classes: Number of classes.
         cluster_centers: Cluster centers, if any, to be plotted.
     """
-    plt.figure(figsize=(10, 10))
+    plt.switch_backend('agg')
+    fig = plt.figure(figsize=(10, 10))
+    ax = plt.gca()
     # loop to plot the clusters depending on the given labels
     for i in range(num_classes):
         idx = np.where(labels == i)
-        plt.scatter(X_2D[idx, 0], X_2D[idx, 1], cmap='viridis')
+        ax.scatter(X_2D[idx, 0], X_2D[idx, 1], cmap='viridis')
 
     # plot the center of the clusters if any
     if cluster_centers is not None:
-        plt.scatter(cluster_centers[:, 0], cluster_centers[:, 1], c='black', s=100, alpha=0.5)
+        ax.scatter(cluster_centers[:, 0], cluster_centers[:, 1], c='black', s=100, alpha=0.5)
 
     list_legend = ["class {}".format(i) for i in range(num_classes)]
-    plt.legend(list_legend)
-    plt.title(title)
-    plt.show()
-    return None
+    ax.legend(list_legend)
+    ax.set_title(title)
+
+    return fig
 
 def plot_functions(list_functions, title):
     """
@@ -63,15 +72,20 @@ def plot_functions(list_functions, title):
         title: title of the graphic.
 
     """
-    plt.figure(figsize=(15, 10))
-    for f in list_functions:
-        plt.plot(f.x, f.y_noisy, f.char_to_plot)  # Plot noisy data
-        plt.plot(f.x, f.y, color=f.color_to_plot)  # Plot f(x)
+    plt.switch_backend('agg')
+    fig = plt.figure(figsize=(10, 10))
+    ax = plt.gca()
+    list_legends = []
+    for idx, f in enumerate(list_functions):
+        ax.plot(f.x, f.y_noisy, f.char_to_plot) # Plot noisy data
+        list_legends.append("Noisy data from Function F{}".format(idx+1))
+        ax.plot(f.x, f.y, color=f.color_to_plot) # Plot f(x)
+        list_legends.append("Function F{}".format(idx+1))
 
-    plt.title(title)
-    plt.show()
+    ax.set_title(title)
+    ax.legend(list_legends)
 
-    return None
+    return fig
 
 def transform_low_to_high(X_low, F_non_linear, list_W):
     """
@@ -124,5 +138,29 @@ def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 
+def load_config(path="configs/default.yaml") -> dict:
+    """
+    Loads and parses a YAML configuration file.
+    :param path: path to YAML configuration file
+    :return: configuration dictionary
+    """
+    with open(path, 'r') as ymlfile:
+        cfg = yaml.safe_load(ymlfile)
 
+    return cfg
+
+def create_writer(path_log_dir):
+    """
+
+    :param path_log_dir:
+    :return:
+    """
+
+    if not os.path.isdir(path_log_dir):
+        os.mkdir(path_log_dir)
+
+    log_tensorboard = path_log_dir + "/tensorboard/"
+    writer = SummaryWriter(log_dir=log_tensorboard)
+
+    return writer
 

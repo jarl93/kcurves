@@ -1,7 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="31e77f0f-e361-4864-917a-bd94d4de7321" name="Default Changelist" comment="" />
+    <list default="true" id="31e77f0f-e361-4864-917a-bd94d4de7321" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/k_curves.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/k_curves.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/mnist_identity_l1.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/configs/mnist_identity_l1.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/synthetic_generation.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/configs/synthetic_generation.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/configs/synthetic_identity_both.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/configs/synthetic_identity_both.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/k-curves.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/k-curves.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kcurves/__main__.py" beforeDir="false" afterPath="$PROJECT_DIR$/kcurves/__main__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kcurves/clustering.py" beforeDir="false" afterPath="$PROJECT_DIR$/kcurves/clustering.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kcurves/data.py" beforeDir="false" afterPath="$PROJECT_DIR$/kcurves/data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kcurves/data_management.py" beforeDir="false" afterPath="$PROJECT_DIR$/kcurves/data_management.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kcurves/functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/kcurves/functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kcurves/generate_synthetic.py" beforeDir="false" afterPath="$PROJECT_DIR$/kcurves/generate_synthetic.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kcurves/helpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/kcurves/helpers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kcurves/initialization.py" beforeDir="false" afterPath="$PROJECT_DIR$/kcurves/initialization.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kcurves/loss.py" beforeDir="false" afterPath="$PROJECT_DIR$/kcurves/loss.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kcurves/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/kcurves/model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kcurves/testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/kcurves/testing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kcurves/training.py" beforeDir="false" afterPath="$PROJECT_DIR$/kcurves/training.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/generate_synthetic.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/short-code-testing.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/short-code-testing.ipynb" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -11,37 +32,67 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/helpers.py">
+        <entry file="file://$PROJECT_DIR$/kcurves/data_management.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1095">
-              <caret line="75" column="4" selection-start-line="75" selection-start-column="4" selection-end-line="75" selection-end-column="4" />
+            <state relative-caret-position="569">
+              <caret line="48" column="32" selection-start-line="48" selection-start-column="32" selection-end-line="48" selection-end-column="32" />
+              <folding>
+                <element signature="e#12#30#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/kcurves/testing.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="626">
+              <caret line="104" column="62" selection-start-line="104" selection-start-column="62" selection-end-line="104" selection-end-column="62" />
+              <folding>
+                <element signature="e#12#24#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/data-management.py">
+        <entry file="file://$PROJECT_DIR$/kcurves/training.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="360">
-              <caret line="24" column="4" selection-start-line="24" selection-start-column="4" selection-end-line="24" selection-end-column="4" />
+            <state relative-caret-position="387">
+              <caret line="32" column="48" selection-start-line="32" selection-start-column="48" selection-end-line="32" selection-end-column="48" />
+              <folding>
+                <element signature="e#13#25#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/training.py">
+        <entry file="file://$PROJECT_DIR$/kcurves/generate_synthetic.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="45">
-              <caret line="3" selection-start-line="3" selection-end-line="3" />
+            <state relative-caret-position="308">
+              <caret line="170" selection-start-line="170" selection-end-line="170" />
+              <folding>
+                <element signature="e#0#9#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/__main__.py">
+        <entry file="file://$PROJECT_DIR$/configs/synthetic_generation.yaml">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="360">
-              <caret line="24" selection-start-line="24" selection-end-line="24" />
+            <state relative-caret-position="233">
+              <caret line="16" column="11" selection-start-line="16" selection-start-column="11" selection-end-line="16" selection-end-column="11" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kcurves/__main__.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="240">
+              <caret line="16" column="26" selection-start-line="16" selection-start-column="26" selection-end-line="16" selection-end-column="26" />
               <folding>
                 <element signature="e#0#15#0" expanded="true" />
               </folding>
@@ -50,48 +101,33 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/data.py">
+        <entry file="file://$PROJECT_DIR$/kcurves/clustering.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="585">
-              <caret line="39" selection-start-line="39" selection-end-line="39" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../k_curves/configs/synthetic_loss-pure-rec.yaml">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="75">
-              <caret line="5" selection-start-line="5" selection-end-line="5" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../k_curves/configs/synthetic_generation.yaml">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="330">
-              <caret line="22" column="12" selection-start-line="22" selection-start-column="12" selection-end-line="22" selection-end-column="12" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/functions.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="195">
-              <caret line="13" column="23" selection-start-line="13" selection-start-column="23" selection-end-line="13" selection-end-column="23" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/../k_curves/scripts/generate_synthetic.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="941">
-              <caret line="120" column="43" selection-start-line="120" selection-start-column="43" selection-end-line="120" selection-end-column="43" />
+            <state relative-caret-position="138">
+              <caret line="19" column="20" selection-start-line="19" selection-start-column="20" selection-end-line="19" selection-end-column="20" />
               <folding>
-                <element signature="e#0#50#0" expanded="true" />
+                <element signature="e#12#43#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/configs/synthetic_identity_both.yaml">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="165">
+              <caret line="11" column="14" selection-start-line="11" selection-start-column="14" selection-end-line="11" selection-end-column="14" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/kcurves/helpers.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="300">
+              <caret line="20" selection-start-line="20" selection-end-line="20" />
+              <folding>
+                <element signature="e#12#18#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -102,6 +138,7 @@
   <component name="FindInProjectRecents">
     <findStrings>
       <find>np</find>
+      <find>batch_size</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -120,22 +157,26 @@
         <option value="$PROJECT_DIR$/k-curves/training.py" />
         <option value="$PROJECT_DIR$/k-curves/testing.py" />
         <option value="$PROJECT_DIR$/k-curves/data.py" />
-        <option value="$PROJECT_DIR$/k-curves/__main__.py" />
-        <option value="$PROJECT_DIR$/configs/synthetic_loss-pure-rec.yaml" />
         <option value="$PROJECT_DIR$/configs/transformation.yaml" />
-        <option value="$PROJECT_DIR$/configs/synthetic_generation.yaml" />
-        <option value="$PROJECT_DIR$/scripts/generate_synthetic.py" />
         <option value="$PROJECT_DIR$/../k_curves/scripts/generate_synthetic.py" />
-      </list>
-    </option>
-  </component>
-  <component name="ProjectConfigurationFiles">
-    <option name="files">
-      <list>
-        <option value="$PROJECT_DIR$/.idea/k-curves.iml" />
-        <option value="$PROJECT_DIR$/.idea/misc.xml" />
-        <option value="$PROJECT_DIR$/.idea/modules.xml" />
-        <option value="$PROJECT_DIR$/.idea/vcs.xml" />
+        <option value="$PROJECT_DIR$/k-curves/__main__.py" />
+        <option value="$PROJECT_DIR$/scripts/generate_synthetic.py" />
+        <option value="$PROJECT_DIR$/kcurves/functions.py" />
+        <option value="$PROJECT_DIR$/configs/synthetic_loss-pure-rec.yaml" />
+        <option value="$PROJECT_DIR$/kcurves/initialization.py" />
+        <option value="$PROJECT_DIR$/kcurves/model.py" />
+        <option value="$PROJECT_DIR$/kcurves/loss.py" />
+        <option value="$PROJECT_DIR$/kcurves/data.py" />
+        <option value="$PROJECT_DIR$/kcurves/__main__.py" />
+        <option value="$PROJECT_DIR$/configs/mnist_identity_l1.yaml" />
+        <option value="$PROJECT_DIR$/configs/synthetic_identity_both.yaml" />
+        <option value="$PROJECT_DIR$/kcurves/generate_synthetic.py" />
+        <option value="$PROJECT_DIR$/configs/synthetic_generation.yaml" />
+        <option value="$PROJECT_DIR$/kcurves/data_management.py" />
+        <option value="$PROJECT_DIR$/kcurves/training.py" />
+        <option value="$PROJECT_DIR$/kcurves/clustering.py" />
+        <option value="$PROJECT_DIR$/kcurves/helpers.py" />
+        <option value="$PROJECT_DIR$/kcurves/testing.py" />
       </list>
     </option>
   </component>
@@ -156,17 +197,33 @@
           <expand>
             <path>
               <item name="k_curves" type="b2602c69:ProjectViewProjectNode" />
-              <item name="k_curves" type="462c0819:PsiDirectoryNode" />
+              <item name="k-curves" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="k_curves" type="b2602c69:ProjectViewProjectNode" />
-              <item name="k_curves" type="462c0819:PsiDirectoryNode" />
-              <item name="k_curves" type="462c0819:PsiDirectoryNode" />
+              <item name="k-curves" type="462c0819:PsiDirectoryNode" />
+              <item name="configs" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="k_curves" type="b2602c69:ProjectViewProjectNode" />
-              <item name="k_curves" type="462c0819:PsiDirectoryNode" />
-              <item name="scripts" type="462c0819:PsiDirectoryNode" />
+              <item name="k-curves" type="462c0819:PsiDirectoryNode" />
+              <item name="data" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="k_curves" type="b2602c69:ProjectViewProjectNode" />
+              <item name="k-curves" type="462c0819:PsiDirectoryNode" />
+              <item name="data" type="462c0819:PsiDirectoryNode" />
+              <item name="synthetic" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="k_curves" type="b2602c69:ProjectViewProjectNode" />
+              <item name="k-curves" type="462c0819:PsiDirectoryNode" />
+              <item name="kcurves" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="k_curves" type="b2602c69:ProjectViewProjectNode" />
+              <item name="k-curves" type="462c0819:PsiDirectoryNode" />
+              <item name="models" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -175,6 +232,7 @@
     </panes>
   </component>
   <component name="PropertiesComponent">
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="configurable.group.editor" />
   </component>
@@ -189,72 +247,6 @@
         </RuleState>
       </list>
     </option>
-  </component>
-  <component name="RunManager">
-    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
-      <module name="k_curves" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration default="true" type="Tox" factoryName="Tox">
-      <module name="k_curves" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <method v="2" />
-    </configuration>
-    <configuration default="true" type="tests" factoryName="Doctests">
-      <module name="k_curves" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="" />
-      <option name="CLASS_NAME" value="" />
-      <option name="METHOD_NAME" value="" />
-      <option name="FOLDER_NAME" value="" />
-      <option name="TEST_TYPE" value="TEST_SCRIPT" />
-      <option name="PATTERN" value="" />
-      <option name="USE_PATTERN" value="false" />
-      <method v="2" />
-    </configuration>
-    <configuration default="true" type="tests" factoryName="Unittests">
-      <module name="k_curves" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;&quot;" />
-      <option name="_new_targetType" value="&quot;PATH&quot;" />
-      <method v="2" />
-    </configuration>
   </component>
   <component name="SvnConfiguration">
     <configuration />
@@ -271,9 +263,8 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-2560" y="0" width="2560" height="1440" extended-state="0" />
-    <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.11146121" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.14690824" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -284,7 +275,7 @@
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Version Control" order="7" />
-      <window_info anchor="bottom" id="Terminal" order="8" visible="true" weight="0.18248175" />
+      <window_info active="true" anchor="bottom" id="Terminal" order="8" visible="true" weight="0.21532847" />
       <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
       <window_info anchor="bottom" id="Python Console" order="10" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -293,118 +284,153 @@
     </layout>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/model.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret column="11" selection-start-column="11" selection-end-column="11" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/loss.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="60">
-          <caret line="4" selection-start-line="4" selection-end-line="4" />
-          <folding>
-            <element signature="e#12#24#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/clustering.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="330">
-          <caret line="22" column="37" lean-forward="true" selection-start-line="22" selection-start-column="37" selection-end-line="22" selection-end-column="37" />
-          <folding>
-            <element signature="e#13#44#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/initialization.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="15">
-          <caret line="1" selection-start-line="1" selection-end-line="1" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/testing.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="45">
-          <caret line="3" selection-start-line="3" selection-end-line="3" />
-          <folding>
-            <element signature="e#12#24#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../k_curves/k-curves.ipynb">
+    <entry file="file://$PROJECT_DIR$/k-curves.ipynb">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/helpers.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1095">
-          <caret line="75" column="4" selection-start-line="75" selection-start-column="4" selection-end-line="75" selection-end-column="4" />
-        </state>
-      </provider>
+    <entry file="file://$PROJECT_DIR$/kcurves/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/data-management.py">
+    <entry file="file://$PROJECT_DIR$/scripts/generate_synthetic.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="360">
-          <caret line="24" column="4" selection-start-line="24" selection-start-column="4" selection-end-line="24" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/__main__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="360">
-          <caret line="24" selection-start-line="24" selection-end-line="24" />
+        <state relative-caret-position="105">
+          <caret line="7" column="31" selection-start-line="7" selection-start-column="31" selection-end-line="7" selection-end-column="31" />
           <folding>
             <element signature="e#0#15#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/data.py">
+    <entry file="file://$PROJECT_DIR$/kcurves/functions.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="585">
-          <caret line="39" selection-start-line="39" selection-end-line="39" />
+        <state relative-caret-position="216">
+          <caret line="26" column="76" selection-start-line="26" selection-start-column="76" selection-end-line="26" selection-end-column="76" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../k_curves/configs/synthetic_loss-pure-rec.yaml">
+    <entry file="file://$PROJECT_DIR$/configs/mnist_identity_l1.yaml">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="75">
-          <caret line="5" selection-start-line="5" selection-end-line="5" />
+        <state relative-caret-position="225">
+          <caret line="15" column="26" selection-start-line="15" selection-start-column="26" selection-end-line="15" selection-end-column="26" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../k_curves/configs/synthetic_generation.yaml">
+    <entry file="file://$PROJECT_DIR$/kcurves/model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="330">
-          <caret line="22" column="12" selection-start-line="22" selection-start-column="12" selection-end-line="22" selection-end-column="12" />
+        <state relative-caret-position="360">
+          <caret line="24" column="25" selection-start-line="24" selection-start-column="25" selection-end-line="24" selection-end-column="25" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/functions.py">
+    <entry file="file://$PROJECT_DIR$/kcurves/data.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="13" column="23" selection-start-line="13" selection-start-column="23" selection-end-line="13" selection-end-column="23" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../k_curves/k_curves/training.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="45">
-          <caret line="3" selection-start-line="3" selection-end-line="3" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../k_curves/scripts/generate_synthetic.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="941">
-          <caret line="120" column="43" selection-start-line="120" selection-start-column="43" selection-end-line="120" selection-end-column="43" />
+        <state relative-caret-position="360">
+          <caret line="24" column="33" selection-start-line="24" selection-start-column="33" selection-end-line="24" selection-end-column="33" />
           <folding>
-            <element signature="e#0#50#0" expanded="true" />
+            <element signature="e#12#30#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kcurves/loss.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="473">
+          <caret line="81" column="7" selection-start-line="81" selection-start-column="7" selection-end-line="81" selection-end-column="7" />
+          <folding>
+            <element signature="e#12#24#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/configs/synthetic_identity_both.yaml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="165">
+          <caret line="11" column="14" selection-start-line="11" selection-start-column="14" selection-end-line="11" selection-end-column="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kcurves/data_management.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="569">
+          <caret line="48" column="32" selection-start-line="48" selection-start-column="32" selection-end-line="48" selection-end-column="32" />
+          <folding>
+            <element signature="e#12#30#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kcurves/initialization.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="345">
+          <caret line="23" column="47" lean-forward="true" selection-start-line="23" selection-start-column="47" selection-end-line="23" selection-end-column="47" />
+          <folding>
+            <element signature="e#12#43#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kcurves/__main__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="240">
+          <caret line="16" column="26" selection-start-line="16" selection-start-column="26" selection-end-line="16" selection-end-column="26" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/configs/synthetic_generation.yaml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="233">
+          <caret line="16" column="11" selection-start-line="16" selection-start-column="11" selection-end-line="16" selection-end-column="11" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kcurves/training.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="387">
+          <caret line="32" column="48" selection-start-line="32" selection-start-column="48" selection-end-line="32" selection-end-column="48" />
+          <folding>
+            <element signature="e#13#25#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kcurves/clustering.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="138">
+          <caret line="19" column="20" selection-start-line="19" selection-start-column="20" selection-end-line="19" selection-end-column="20" />
+          <folding>
+            <element signature="e#12#43#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kcurves/generate_synthetic.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="308">
+          <caret line="170" selection-start-line="170" selection-end-line="170" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kcurves/helpers.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="300">
+          <caret line="20" selection-start-line="20" selection-end-line="20" />
+          <folding>
+            <element signature="e#12#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kcurves/testing.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="626">
+          <caret line="104" column="62" selection-start-line="104" selection-start-column="62" selection-end-line="104" selection-end-column="62" />
+          <folding>
+            <element signature="e#12#24#0" expanded="true" />
           </folding>
         </state>
       </provider>

@@ -4,9 +4,10 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import manhattan_distances
 from sklearn.metrics import mean_squared_error
+from helpers import plot_X2D_visualization
 
 
-def k_means(X, n_clusters, verbose=True, plot=True):
+def k_means(X, n_clusters, verbose=True, plot = False):
     """
     Runs k-means given the data (numpy array) and the number of clusters to consider.
     Arguments:
@@ -25,13 +26,24 @@ def k_means(X, n_clusters, verbose=True, plot=True):
         for i in range(n_clusters):
             print("Cluster: {}, centroid: {}: ".format(i, centers[i]))
 
-    if plot:
-        plt.figure(figsize=(10, 10))
-        plt.scatter(X[:, 0], X[:, 1], c=labels, s=50, cmap='viridis')
-        plt.scatter(centers[:, 0], centers[:, 1], c='black', s=100, alpha=0.5)
-        plt.title("Visualization of k-means")
-
     return centers, labels
+
+def visualize_kmeans(writer, X, n_clusters, title_fig, title_plot):
+    """
+
+    :param writer:
+    :param X:
+    :param n_clusters:
+    :param title_fig:
+    :param title_plot:
+    :return:
+    """
+    centers, labels = k_means(X, n_clusters = n_clusters)
+    title = title_fig
+    writer.add_figure(title_plot,
+                      plot_X2D_visualization(X, labels, title=title, num_classes = n_clusters, cluster_centers=centers))
+
+    return None
 
 
 def k_medians_manhattan(X, n_clusters, cluster_centers_init=None, max_iter=1000, tol=1e-6, verbose=False):

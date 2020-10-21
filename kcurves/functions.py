@@ -1,3 +1,6 @@
+# libraries
+import numpy as np
+
 class Function():
     def __init__(self, interval, char_to_plot='o', color_to_plot='red'):
         """

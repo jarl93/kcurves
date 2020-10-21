@@ -22,8 +22,8 @@ def L1_regularization(autoencoder, x, lambda_):
     layers_decoder = list(autoencoder.decoder.children())
 
     # Most of the layers are embedded in a nn.ModuleList(), therefore
-    # we have to get them from the index 0 in the list of linear layers.
-    hidden_layers = list(layers_encoder[0]) + [linear_layers_encoder[1], linear_layers_encoder[1]] \
+    # we have to get them from the index 0 and 1.
+    hidden_layers = list(layers_encoder[0]) + [layers_encoder[1], layers_encoder[2]] \
                     + list(layers_decoder[0])
 
     for h_layer in hidden_layers:
@@ -48,7 +48,8 @@ def entropy_regularization(encoder, h, beta_):
 
     """
     # compute entropy loss for the last layer of the encoder
-    if encoder.last_nn_layer_encoder == 'Identity':
+    h_ent = None
+    if encoder.last_nn_layer_encoder_name == 'Identity':
         h_ent = F.softmax(h, dim = 1) * F.log_softmax(h, dim = 1)
         #TODO: add code for: h_ent = F.softmax(h, dim=1) * h
     elif encoder.last_nn_layer_encoder == 'Softmax':

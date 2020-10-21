@@ -1,10 +1,12 @@
 import argparse
-
-from joeynmt.training import train
-from joeynmt.prediction import test
+from data_management import load_data_set
+from initialization import init_model
+from training import train
+from testing import test
 
 def main():
-    ap = argparse.ArgumentParser()
+
+    ap = argparse.ArgumentParser("kcurves")
 
     ap.add_argument("mode", choices=["train", "test"],
                     help="train or test a model")
@@ -15,13 +17,18 @@ def main():
     args = ap.parse_args()
 
     if args.mode == "train":
-        train(cfg_file=args.config_path)
+        data_set = load_data_set(cfg_path = args.config_path)
+        model = init_model(cfg_path = args.config_path)
+        train(cfg_path = args.config_path, model = model, data_set = data_set)
+
     elif args.mode == "test":
-        test(cfg_file=args.config_path, ckpt=args.ckpt,
-             output_path=args.output_path, save_attention=args.save_attention)
+        data_set = load_data_set(cfg_path = args.config_path)
+        # init_model is needed since in the training just the state_dict was saved
+        model = init_model(cfg_path = args.config_path)
+        test(cfg_path = args.config_path, model = model, data_set = data_set)
+
     else:
         raise ValueError("Unknown mode")
-
 
 if __name__ == "__main__":
     main()
