@@ -3,7 +3,11 @@ This project is an attempt to use curves (functions) and deep auto-encoders to d
 
 # Installation
 1. Please install the libraries needed listed in the requirements.txt file.
-2. Clone the project: git clone https://github.com/hci-unihd/k-curves.git
+2. Clone the project by executing the following command:
+
+```bash
+git clone https://github.com/hci-unihd/k-curves.git
+```
 
 # Generate synthetic data
 
