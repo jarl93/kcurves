@@ -12,6 +12,8 @@ In order to generate synthetic data run the script generate_synthetic.py with th
 python3 kcurves/generate_synthetic.py ./configs/synthetic_generation.yaml
 ```
 
+**Note:** All the commands should be executed from the main folder of your project (where you executed the git clone).
+
 The default configuration file "./configs/synthetic_generation.yaml" is a configuration file to set the functions parameters to generate the data. You can create your own file or modify default one, if you create a new one please change the last parameter when executing the script.
 
 # Visualize the data generated
