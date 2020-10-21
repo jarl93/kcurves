@@ -22,12 +22,12 @@ python3 kcurves/generate_synthetic.py ./configs/synthetic_generation.yaml
 
 **Note:** All the commands should be executed from the main folder of your project (where you executed the git clone).
 
-The default configuration file "./configs/synthetic_generation.yaml" is a configuration file to set the functions parameters to generate the data. You can create your own file or modify default one, if you create a new one don't forget to change the last parameter when executing the script.
+The default configuration file "./configs/synthetic_generation.yaml" is a configuration file to set the functions parameters to generate the data. You can create your own file or modify the default one, if you create a new one don't forget to change the last parameter when executing the script.
 
 
 # Visualize the data generated
 
-In order to visualize the data generated you need to do run tensorboard as follows:
+In order to visualize the data generated you need to run tensorboard as follows:
 ```bash
 tensorboard --logdir ./data/synthetic/plots
 ```
