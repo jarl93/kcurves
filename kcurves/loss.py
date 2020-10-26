@@ -21,14 +21,16 @@ def L1_regularization(autoencoder, x, lambda_):
     layers_encoder = list(autoencoder.encoder.children())
     layers_decoder = list(autoencoder.decoder.children())
 
-    # Most of the layers are embedded in a nn.ModuleList(), therefore
-    # we have to get them from the index 0 and 1.
-    hidden_layers = list(layers_encoder[0]) + [layers_encoder[1], layers_encoder[2]] \
-                    + list(layers_decoder[0])
+    # Most of the layers are embedded in a nn.ModuleList(),
+    # but we should consider as well the output layers
+    # (linear and non-linear) from the encoder and decoder
+    layers = list(layers_encoder[0]) + [layers_encoder[1], layers_encoder[2]] \
+                    + list(layers_decoder[0]) + [layers_decoder[1], layers_decoder[2]]
 
-    for h_layer in hidden_layers:
-        x = h_layer(x)
-        loss_L1 += torch.mean(torch.abs(x))  # get the mean of the batch
+    for layer in layers:
+        x = layer(x)
+        if isinstance(layer, nn.ReLU): # consider just the activation layers
+            loss_L1 += torch.mean(torch.abs(x))  # get the mean of the batch
 
     # scale by lambda
     loss_L1 *= lambda_
