@@ -3,3 +3,4 @@ k-curves.ipynb
 .idea
 short-code-testing.ipynb
 kcurves/__pycache__/
+.ipynb_checkpoints/
