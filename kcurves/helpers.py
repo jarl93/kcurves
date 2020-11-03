@@ -137,7 +137,6 @@ def sigmoid(x):
     """
     return 1 / (1 + np.exp(-x))
 
-
 def load_config(path="configs/default.yaml") -> dict:
     """
     Loads and parses a YAML configuration file.
@@ -164,3 +163,46 @@ def create_writer(path_log_dir):
 
     return writer
 
+def get_regularization_hyperparameters(cfg_path):
+    """
+    Extracts the regularization hyperparameters: the regularization types and
+    the scalar factors for each of those, from the config file.
+    :param cfg_path: path for the config file.
+    :return:
+        - dic_regularization_types: dictionary with boolean values depending on whether the regularization is activated or not.
+        - dic_scalar_hyperparameters: dictionary with hyperparameters to scale the regularization terms.
+    """
+
+    cfg_file = load_config(cfg_path)
+
+    # types of regularization
+    reg_L1 = cfg_file["train"]["reg_L1"]
+    reg_KL = cfg_file["train"]["reg_KL"]
+    reg_entropy = cfg_file["train"]["reg_entropy"]
+    dic_regularization_types = {"reg_L1": reg_L1, "reg_KL": reg_KL, "reg_entropy": reg_entropy}
+
+    # hyperparamters (scalar factors) for the regularization
+    lambda_ = cfg_file["train"]["lambda"]
+    beta_ = cfg_file["train"]["beta"]
+    gamma_ = cfg_file["train"]["gamma"]
+    rho_ = cfg_file["train"]["rho"]
+    dic_scalar_hyperparameters = {"lambda": lambda_, "beta": beta_, "gamma": gamma_, "rho": rho_}
+
+    return dic_regularization_types, dic_scalar_hyperparameters
+
+def make_string_from_dic(dic):
+    """
+    Makes a string out of a dictionary, by relating the keys and values with "=" symbol and by
+    using a "_" as separator.
+        For example:
+        dic = {key1: val1, key2: val2, key3: val3 } => str_ = "key1=val1_key2=val2_key3=val3"
+    :param dic: dictionary to be applied the transformation.
+    :return: str_: string that represents the dictionary given.
+    """
+    str_ = ""
+    for key, value in dic.items():
+        str_ += key + "=" +str(value)+"_"
+
+    str_ = str_[:-1] # remove the last character of the string
+
+    return str_

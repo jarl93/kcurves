@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from helpers import load_config
 from helpers import imshow
-from helpers import plot_X2D_visualization, create_writer
+from helpers import plot_X2D_visualization, create_writer, get_regularization_hyperparameters, make_string_from_dic
 from torch.utils.data import DataLoader
 from _datetime import datetime
 from clustering import k_means
@@ -27,8 +27,15 @@ def test(cfg_path, model, data_set):
     show_images = cfg_file["tracing"]["show_images"]
     images_to_show = cfg_file["tracing"]["images_to_show"]
 
-    # create a path for the log directory
-    path_log_dir = cfg_file["model"]["path"] + "log_testing_" + datetime.now().strftime("%d.%m.%Y-%H:%M:%S")
+    # get the regularization hyperparameters
+    dic_regularization_types, dic_scalar_hyperparameters = get_regularization_hyperparameters(cfg_path)
+    str_reg_types = make_string_from_dic(dic_regularization_types)
+    str_scalar_hyperparameters = make_string_from_dic(dic_scalar_hyperparameters)
+
+    # create a path for the log directory that includes the date and the hyperparameters for the regularization
+    path_log_dir = cfg_file["model"]["path"] + "log_testing_" + datetime.now().strftime("%d.%m.%Y-%H:%M:%S") + \
+                   "\n" + str_reg_types + "\n" + str_scalar_hyperparameters
+
     writer = create_writer(path_log_dir)
 
     # load the model from training

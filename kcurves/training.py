@@ -3,7 +3,7 @@
 import torch
 import torch.optim as optim
 import os
-from helpers import load_config, create_writer
+from helpers import load_config, create_writer, get_regularization_hyperparameters
 from loss import loss_function
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -22,9 +22,12 @@ def train(cfg_path, model, data_set, verbose = True):
     cfg_file = load_config(cfg_path)
 
     num_epochs = cfg_file["train"]["num_epochs"]
-    lambda_ = cfg_file["train"]["lambda"]
-    beta_ = cfg_file["train"]["beta"]
-    regularization = cfg_file["train"]["regularization"]
+
+    # get the regularization hyperparameters
+    dic_regularization_types, dic_scalar_hyperparameters = get_regularization_hyperparameters(cfg_path)
+    regularization_types = [*dic_regularization_types.values()]
+    scalar_hyperparameters = [*dic_scalar_hyperparameters.values()]
+
     lr = cfg_file["train"]["lr"]
     device =  cfg_file["model"]["device"]
     save = cfg_file["model"]["save"]
@@ -32,14 +35,15 @@ def train(cfg_path, model, data_set, verbose = True):
     batch_frequency_loss = cfg_file["train"]["batch_frequency_loss"]
     batch_size = cfg_file["train"]["batch_size"]
 
-    # create a path for the log directory
+    # create a path for the log directory that includes the dates
+    # TODO: include the other hyperparameters for the training
     path_log_dir = cfg_file["model"]["path"] + "log_training_" + datetime.now().strftime("%d.%m.%Y-%H:%M:%S")
     writer = create_writer(path_log_dir)
 
 
     print("Starting training on {}...".format(cfg_file["data"]["data_set"]))
 
-    # Use Adam optmizer
+    # use Adam optmizer
     optimizer = optim.Adam(model.parameters(), lr = lr)
 
     model.train()
@@ -76,7 +80,7 @@ def train(cfg_path, model, data_set, verbose = True):
             h = model.encoder(x)
 
             # Compute the loss of the batch
-            loss = loss_function(x, x_reconstructed, h, model, lambda_, beta_, regularization)
+            loss = loss_function(x, x_reconstructed, h, model, scalar_hyperparameters, regularization_types)
 
             #list_loss.append(loss)
 
