@@ -1,31 +1,105 @@
 import os
 import argparse
 from helpers import transform_low_to_high, load_config, sigmoid, plot_functions, plot_X2D_visualization
-from data_management import normalize_data
+from data_management import normalize_data, scale_data
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 from functions import FunctionSin
 from datetime import datetime
 from clustering import k_means
+from sklearn.datasets import make_blobs
 
-# def plot_synthetic(X, Y, title):
-#     """
-#     Add documentation
-#
-#     :param X:
-#     :param Y:
-#     :param title:
-#     :return:
-#     """
-#     # Plot data according to the labels
-#     idx0 = np.where(Y == 0)
-#     idx1 = np.where(Y == 1)
-#     plt.scatter(X[idx0, 0], X[idx0, 1], cmap='viridis')
-#     plt.scatter(X[idx1, 0], X[idx1, 1], cmap='viridis')
-#     plt.title(title)
-#     plt.show()
-#
-#     return None
+def generate_synthetic_clusters(cfg_path, verbose = True):
+    # laod config file
+    cfg_file = load_config(cfg_path)
+
+    # create a path for the log directory
+    path_log_dir = cfg_file["data"]["plots"]["path"] + datetime.now().strftime("%d.%m.%Y-%H:%M:%S")
+
+    if not os.path.isdir(path_log_dir):
+        os.mkdir(path_log_dir)
+
+    log_tensorboard = path_log_dir + "/tensorboard/"
+
+    writer = SummaryWriter(log_dir=log_tensorboard)
+
+    centers = []
+    for center in cfg_file["clusters"]["centers"]:
+        centers.append(tuple(center))
+
+    std_centers = cfg_file["clusters"]["std_centers"]
+    n_samples_train = cfg_file["data"]["train"]["num_samples"]
+    n_samples_test = cfg_file["data"]["test"]["num_samples"]
+    dim = cfg_file["clusters"]["dim"]
+
+    print("std_centers: ", std_centers)
+    print("centers: ", centers)
+
+    if verbose:
+        print("Generating clusters...")
+
+    X_train_raw, Y_train = make_blobs(n_samples = n_samples_train, cluster_std = std_centers,
+                                  centers = centers, n_features = dim, random_state = 1)
+
+    X_test_raw, Y_test = make_blobs(n_samples = n_samples_test, cluster_std = std_centers,
+                                  centers = centers, n_features = dim, random_state = 1)
+
+    if cfg_file["data"]["normalize"]:
+        X_train = normalize_data(X_train_raw)
+        X_test = normalize_data(X_test_raw)
+    elif cfg_file["data"]["scale"]:
+        X_train = scale_data(X_train_raw)
+        X_test = scale_data(X_test_raw)
+    else:
+        X_train = X_train_raw
+        X_test = X_test_raw
+
+
+    if cfg_file["data"]["save"]:
+        if verbose:
+            print("Saving data...")
+        # save the training data
+        np.save(cfg_file["data"]["train"]["path"] + "X_train_raw", X_train_raw)
+        np.save(cfg_file["data"]["train"]["path"] + "X_train", X_train)
+        np.save(cfg_file["data"]["train"]["path"] + "Y_train", Y_train)
+        # save the test data
+        np.save(cfg_file["data"]["test"]["path"] + "X_test_raw", X_test_raw)
+        np.save(cfg_file["data"]["test"]["path"] + "X_test", X_test)
+        np.save(cfg_file["data"]["test"]["path"] + "Y_test", Y_test)
+
+    if cfg_file["data"]["plot"]:
+        if verbose:
+            print("Plotting data...")
+
+        # visualize training data in 2D
+
+        title = "Training data (raw)"
+        writer.add_figure('01 Visualization 2D training data (raw) ',
+                          plot_X2D_visualization(X_train_raw, Y_train,
+                                                 title = title, num_classes = len(centers)))
+
+        title = "Training data"
+        writer.add_figure('01.1 Visualization 2D training data',
+                          plot_X2D_visualization(X_train, Y_train, title=title, num_classes=len(centers)))
+
+        # visualize test data in 2D
+
+        title = "Test data (raw)"
+        writer.add_figure('02 Visualization 2D test data (raw)',
+                          plot_X2D_visualization(X_test_raw, Y_test,
+                                                 title=title, num_classes=len(centers)))
+        title = "Test data"
+        writer.add_figure('02.1 Visualization 2D test data',
+                          plot_X2D_visualization(X_test, Y_test, title=title, num_classes=len(centers)))
+
+        writer.add_figure('02.1 Visualization 2D test data',
+                          plot_X2D_visualization(X_test, Y_test, title=title, num_classes=len(centers)))
+
+
+    if verbose:
+        print("Data generation completed!")
+
+    return X_train, Y_train, X_test, Y_test
 
 def generate_synthetic(cfg_path, verbose = True):
     """
@@ -109,7 +183,7 @@ def generate_synthetic(cfg_path, verbose = True):
 
     # training data
     X_train_low = np.vstack((F1_train.vec, F2_train.vec))
-    if cfg_file["data"]["train"]["normalize"]:
+    if cfg_file["data"]["normalize"]:
         X_train_low_normalized = normalize_data(X_train_low, verbose=True)
         # save the training data normalized
         if cfg_file["data"]["save"]:
@@ -136,7 +210,7 @@ def generate_synthetic(cfg_path, verbose = True):
 
     # test data
     X_test_low = np.vstack((F1_test.vec, F2_test.vec))
-    if cfg_file["data"]["test"]["normalize"]:
+    if cfg_file["data"]["normalize"]:
         X_test_low_normalized = normalize_data(X_test_low, verbose=True)
 
         # save the test data nomalized
@@ -185,6 +259,9 @@ def generate_synthetic(cfg_path, verbose = True):
 
     if cfg_file["data"]["plot"]:
 
+        if verbose:
+            print("Plotting data...")
+
         # plot functions and gaussian noisy data
         writer.add_figure('01 Functions and gaussian noisy training data',
                           plot_functions([F1_train, F2_train], "Train data generated"))
@@ -227,6 +304,9 @@ def generate_synthetic(cfg_path, verbose = True):
                                                  title = title, num_classes = len(list_F_test),
                                                  cluster_centers = centers_test_low_normalized))
 
+    if verbose:
+        print("Data generation completed!")
+
 
     return X_train, Y_train, X_test, Y_test
 
@@ -238,4 +318,8 @@ if __name__ == "__main__":
                     help="path to YAML config file")
     args = ap.parse_args()
 
-    generate_synthetic(cfg_path = args.config_path)
+    # generate synthetic data with sin waves
+    #generate_synthetic(cfg_path = args.config_path)
+
+    # generate synthetic clusters (isotropic Gaussian blobs)
+    generate_synthetic_clusters(cfg_path=args.config_path)

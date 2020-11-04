@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 import yaml
 from torch.utils.tensorboard import SummaryWriter
+import torch
 
 def imshow(list_images):
     """
@@ -137,6 +138,20 @@ def sigmoid(x):
     """
     return 1 / (1 + np.exp(-x))
 
+def pairwise_distances(x, y):
+    '''
+    Arguments: x is a (N,d) tensor
+           y is a (M,d) tensor
+    Output: dist is a (N,M) tensor where dist[i,j] is the square L2-norm
+            between x[i,:] and y[j,:] => dist[i,j] = ||x[i,:]-y[j,:]||^2
+    '''
+    x_norm = (x**2).sum(1).view(-1, 1)
+    y_t = torch.transpose(y, 0, 1)
+    y_norm = (y**2).sum(1).view(1, -1)
+    dist = x_norm + y_norm - 2.0 * torch.mm(x, y_t)
+
+    return torch.clamp(dist, 0.0, np.inf)
+
 def load_config(path="configs/default.yaml") -> dict:
     """
     Loads and parses a YAML configuration file.
@@ -175,20 +190,28 @@ def get_regularization_hyperparameters(cfg_path):
 
     cfg_file = load_config(cfg_path)
 
-    # types of regularization
-    reg_L1 = cfg_file["train"]["reg_L1"]
-    reg_KL = cfg_file["train"]["reg_KL"]
-    reg_entropy = cfg_file["train"]["reg_entropy"]
-    dic_regularization_types = {"reg_L1": reg_L1, "reg_KL": reg_KL, "reg_entropy": reg_entropy}
+    dic_regularization_types = {}
+    dic_hyperparameters = {}
 
-    # hyperparamters (scalar factors) for the regularization
-    lambda_ = cfg_file["train"]["lambda"]
-    beta_ = cfg_file["train"]["beta"]
-    gamma_ = cfg_file["train"]["gamma"]
-    rho_ = cfg_file["train"]["rho"]
-    dic_scalar_hyperparameters = {"lambda": lambda_, "beta": beta_, "gamma": gamma_, "rho": rho_}
+    if cfg_file["data"]["data_set"] == "synthetic":
+        # types of regularization
+        reg_L1 = cfg_file["train"]["reg_L1"]
+        reg_KL = cfg_file["train"]["reg_KL"]
+        reg_entropy = cfg_file["train"]["reg_entropy"]
+        dic_regularization_types = {"reg_L1": reg_L1, "reg_KL": reg_KL, "reg_entropy": reg_entropy}
+        # hyperparamters (scalar factors) for the regularization
+        lambda_ = cfg_file["train"]["lambda"]
+        beta_ = cfg_file["train"]["beta"]
+        gamma_ = cfg_file["train"]["gamma"]
+        rho_ = cfg_file["train"]["rho"]
+        dic_hyperparameters = {"lambda": lambda_, "beta": beta_, "gamma": gamma_, "rho": rho_}
+    elif cfg_file["data"]["data_set"] == "synthetic_clusters":
+        lambda_ = cfg_file["train"]["lambda"]
+        alpha_min = cfg_file["train"]["alpha_min"]
+        alpha_max = cfg_file["train"]["alpha_max"]
+        dic_hyperparameters = {"lambda": lambda_, "alpha_min": alpha_min, "alpha_max": alpha_max}
 
-    return dic_regularization_types, dic_scalar_hyperparameters
+    return dic_regularization_types, dic_hyperparameters
 
 def make_string_from_dic(dic):
     """

@@ -23,13 +23,11 @@ F2:
 data:
   save: True
   plot: True
-
+  normalize: True
   train:
     path: "./data/synthetic/train/"
-    normalize: True
   test:
     path: "./data/synthetic/test/"
-    normalize: True
 
   plots:
     path: "./data/synthetic/plots/"

@@ -12,12 +12,12 @@ train:
 
   # scalar hyperparameters for the regularization terms
   lambda: 0.001 # scalar for reg_L1
-  beta: 0.001  # scalar for reg_entropy
-  gamma: 0.1  # scalar for reg_KL
+  beta: 0.01  # scalar for reg_entropy
+  gamma: 1  # scalar for reg_KL
   rho: 0.5
   # boolean hyperparameters to activate different kind of regularization
   reg_L1: False
-  reg_KL: True
+  reg_KL: False
   reg_entropy: True
 
   lr: 0.0001
@@ -35,10 +35,11 @@ model:
   device: 'cpu' # it could be 'cpu' or 'cuda'
   encoder:
     layer_sizes: [100, 64, 32]
-    last_nn_layer: "Identity"  # it could be on from {'Identity', 'Softmax', 'ReLU'}
+    last_nn_layer: "Identity"  # it could be one from {'Identity', 'Softmax', 'ReLU'}
 
   decoder:
     layer_sizes: [32, 64, 100]
+    last_nn_layer: "Identity"  # it could be one from {'Identity', 'Softmax', 'ReLU'}
 
   input_dim: 100
   latent_dim: 2

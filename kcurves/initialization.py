@@ -18,6 +18,7 @@ def init_model(cfg_path, verbose=False):
     input_dim = cfg_file["model"]["input_dim"]
     latent_dim = cfg_file["model"]["latent_dim"]
     last_nn_layer_encoder = cfg_file["model"]["encoder"]["last_nn_layer"]
+    last_nn_layer_decoder = cfg_file["model"]["decoder"]["last_nn_layer"]
     device = cfg_file["model"]["device"]
 
     if verbose:
@@ -25,7 +26,7 @@ def init_model(cfg_path, verbose=False):
     # Define the model as an autoencoder
     model = AE(input_dim=input_dim, encoder_layer_sizes = encoder_layer_sizes,
                decoder_layer_sizes = decoder_layer_sizes, latent_dim = latent_dim,
-               last_nn_layer_encoder = last_nn_layer_encoder)
+               last_nn_layer_encoder = last_nn_layer_encoder, last_nn_layer_decoder = last_nn_layer_decoder)
 
     model = model.to(device)
 

@@ -4,7 +4,7 @@ import torch
 import torch.optim as optim
 import os
 from helpers import load_config, create_writer, get_regularization_hyperparameters
-from loss import loss_function
+from loss import loss_function, loss_function_clusters
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
@@ -22,18 +22,35 @@ def train(cfg_path, model, data_set, verbose = True):
     cfg_file = load_config(cfg_path)
 
     num_epochs = cfg_file["train"]["num_epochs"]
-
-    # get the regularization hyperparameters
-    dic_regularization_types, dic_scalar_hyperparameters = get_regularization_hyperparameters(cfg_path)
-    regularization_types = [*dic_regularization_types.values()]
-    scalar_hyperparameters = [*dic_scalar_hyperparameters.values()]
-
     lr = cfg_file["train"]["lr"]
-    device =  cfg_file["model"]["device"]
+    device = cfg_file["model"]["device"]
     save = cfg_file["model"]["save"]
     batch_frequency_trace = cfg_file["tracing"]["batch_frequency"]
     batch_frequency_loss = cfg_file["train"]["batch_frequency_loss"]
     batch_size = cfg_file["train"]["batch_size"]
+
+    # make the generator train_loader for the train_dataset
+    train_dataset, _ = data_set
+    train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+
+    N = len(train_dataset)
+    num_batches = N // batch_size
+
+    # get the regularization hyperparameters
+    if cfg_file["data"]["data_set"] == "synthetic":
+        dic_regularization_types, dic_scalar_hyperparameters = get_regularization_hyperparameters(cfg_path)
+        regularization_types = [*dic_regularization_types.values()]
+        scalar_hyperparameters = [*dic_scalar_hyperparameters.values()]
+    elif cfg_file["data"]["data_set"] == "synthetic_clusters":
+        # the dimension of the latent space corresponds to the number of clusters
+        dim = cfg_file["model"]["latent_dim"]
+        centers = torch.eye(dim) # centers based on the identity matrix
+        lambda_ = cfg_file["train"]["lambda"]
+        alpha_min = cfg_file["train"]["alpha_min"] # min value for temperature hyperparameter (alpha)
+        alpha_max = cfg_file["train"]["alpha_max"] # max value for temperature hyperparameter (alpha)
+        # compute the increment of alpha by considering the number of epochs and the number of batches
+        alpha_inc = (alpha_max - alpha_min)/(num_batches * num_epochs)
+        alpha_ = alpha_min
 
     # create a path for the log directory that includes the dates
     # TODO: include the other hyperparameters for the training
@@ -48,15 +65,6 @@ def train(cfg_path, model, data_set, verbose = True):
 
     model.train()
 
-
-    # make the generator train_loader for the train_dataset
-    train_dataset, _ = data_set
-    train_loader = DataLoader(dataset = train_dataset, batch_size = batch_size, shuffle = True)
-
-    N = len(train_dataset)
-    num_batches = N // batch_size
-
-    #list_loss = []
     for epoch in range(num_epochs):
         train_loss = 0
 
@@ -74,15 +82,18 @@ def train(cfg_path, model, data_set, verbose = True):
             x = x.view(-1, model.input_dim)
             optimizer.zero_grad()
 
-            # Get the reconstrunction from the autoencoder
+            # Get the reconstrunction from the auto-encoder
             x_reconstructed = model(x)
 
+            # Get the latent vector
             h = model.encoder(x)
 
             # Compute the loss of the batch
-            loss = loss_function(x, x_reconstructed, h, model, scalar_hyperparameters, regularization_types)
-
-            #list_loss.append(loss)
+            if cfg_file["data"]["data_set"] == "synthetic":
+                loss = loss_function(x, x_reconstructed, h, model, scalar_hyperparameters, regularization_types)
+            elif cfg_file["data"]["data_set"] == "synthetic_clusters":
+                loss = loss_function_clusters(x, x_reconstructed, h, centers, lambda_, alpha_)
+                alpha_ += alpha_inc
 
             loss.backward()
             train_loss += loss.item()

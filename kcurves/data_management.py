@@ -29,10 +29,27 @@ def load_data_set(cfg_path, verbose = True):
 
 
     elif cfg_file["data"]["data_set"] == "synthetic":
+
+        # TODO: Chage code to have proper names for X_train, Y_train, X_test, Y_test
         X_train = np.load(cfg_file["data"]["train"]+"X.npy")
         Y_train = np.load(cfg_file["data"]["train"]+"Y.npy")
         X_test =  np.load(cfg_file["data"]["test"]+"X.npy")
         Y_test = np.load(cfg_file["data"]["test"]+ "Y.npy")
+
+        train_dataset = SyntheticDataset(data = X_train, labels = Y_train)
+        test_dataset = SyntheticDataset(data = X_test, labels = Y_test)
+
+        if verbose:
+            print("Shape X_train: ", X_train.shape)
+            print("Shape Y_train: ", Y_train.shape)
+            print("Shape X_test: ", X_test.shape)
+            print("Shape Y_test: ", Y_test.shape)
+
+    elif cfg_file["data"]["data_set"] == "synthetic_clusters":
+        X_train = np.load(cfg_file["data"]["train"]+"X_train.npy")
+        Y_train = np.load(cfg_file["data"]["train"]+"Y_train.npy")
+        X_test =  np.load(cfg_file["data"]["test"]+"X_test.npy")
+        Y_test = np.load(cfg_file["data"]["test"]+ "Y_test.npy")
 
         train_dataset = SyntheticDataset(data = X_train, labels = Y_train)
         test_dataset = SyntheticDataset(data = X_test, labels = Y_test)
@@ -52,11 +69,12 @@ def load_data_set(cfg_path, verbose = True):
 
 def normalize_data(X, verbose=False):
     """
-    Function to normalize the data by subtracting the mean and dividing by the variance.
+    Normalize the data by subtracting the mean and dividing by the variance.
     Arguments:
         X: numpy array with the data.
         verbose: bool variable to print out sanity checks.
 
+    Output: X normalized
     """
     mean = np.mean(X, axis=0)
     var = np.var(X, axis=0)
@@ -69,6 +87,18 @@ def normalize_data(X, verbose=False):
     X = (X - mean) / var
 
     return X
+def scale_data(X, verbose = False):
+    """
+    Scales data, such that all the points are in the square bottom_left = (-1,-1), upper_right = (1,1).
+    :param X: numpy array with the data.
+    :param verbose: boolean varaible to print sanity checks.
+    :return: X_scaled: numpy array with the data scaled.
+    """
+    X_abs = np.absolute(X)
+    x_max = np.max(X_abs)
+    X_scaled = X / x_max
+
+    return X_scaled
 
 def split_data_loader(data_loader):
     """

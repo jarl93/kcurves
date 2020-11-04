@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import sys
-
+from helpers import  pairwise_distances
 
 # As long as PyTorch operations are employed the loss.backward should work
 
@@ -24,6 +24,7 @@ def get_hidden_layers(autoencoder):
              + list(layers_decoder[0]) + [layers_decoder[1], layers_decoder[2]]
 
     return layers
+
 
 def L1_regularization(autoencoder, x, lambda_):
     """
@@ -84,7 +85,6 @@ def KL_regularization(autoencoder, x, gamma_, rho_scalar):
     return loss_KL
 
 
-
 def entropy_regularization(encoder, h, beta_):
     """
     Computes the entropy regularization loss for the last layer of the encoder
@@ -107,14 +107,16 @@ def entropy_regularization(encoder, h, beta_):
 
     loss_entropy = -1.0 * h_ent.sum()
 
+    rho_hat = F.softmax(h, dim = 1)
+    rho = 0.5 * torch.ones_like(rho_hat)
+    loss_KL = torch.sum(rho * torch.log(rho / rho_hat) + (1 - rho) * torch.log((1 - rho) / (1 - rho_hat)))
+
+    loss_entropy += loss_KL
+
     # scale by lambda
     loss_entropy *= beta_
 
     return loss_entropy
-
-
-
-
 
 
 def loss_function(x, x_reconstructed, h, autoencoder, scalar_hyperparameters, regularization_types = None):
@@ -161,3 +163,25 @@ def loss_function(x, x_reconstructed, h, autoencoder, scalar_hyperparameters, re
             loss_batch += loss_entropy
 
     return loss_batch
+
+def loss_function_clusters(x, x_reconstructed, h, centers, lambda_, alpha_):
+
+    # Compute the MSE loss between the input and the reconstruction
+    loss_MSE = nn.MSELoss()
+    loss_batch = loss_MSE(x, x_reconstructed)
+
+    # compute the distance matrix between the batch of points and the centers
+    dist = pairwise_distances(h, centers)
+    # relaxation of the Indicator function
+    I_relaxed = F.softmax(-1.0 * alpha_ * dist, dim = 1)
+    # compute the loss by multiplying the Indicator function and the distance
+    loss_dist = torch.sum(I_relaxed * dist)
+
+    # scale loss_dist with lambda_
+    loss_dist *= lambda_
+
+    loss_batch += loss_dist
+
+    return loss_batch
+
+

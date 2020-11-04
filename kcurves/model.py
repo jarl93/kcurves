@@ -2,7 +2,8 @@
 import torch.nn as nn
 
 class AE(nn.Module):
-    def __init__(self, input_dim, encoder_layer_sizes, decoder_layer_sizes, latent_dim, last_nn_layer_encoder):
+    def __init__(self, input_dim, encoder_layer_sizes, decoder_layer_sizes, latent_dim,
+                 last_nn_layer_encoder, last_nn_layer_decoder):
         """
         Arguments:
             input_dim (int): dimension of the input.
@@ -11,6 +12,8 @@ class AE(nn.Module):
             latent_dim (int): dimension of latent space/bottleneck.
             last_nn_layer_encoder (string): last non-linear layer of the encoder,
                                             the output will be the latent variable.
+            last_nn_layer_decoder (string): last non-linear layer of the decoder,
+                                            the output will be the reconstruction.
         """
         super(AE, self).__init__()
 
@@ -20,7 +23,7 @@ class AE(nn.Module):
         self.latent_dim = latent_dim
 
         self.encoder = Encoder(encoder_layer_sizes, latent_dim, last_nn_layer_encoder)
-        self.decoder = Decoder(decoder_layer_sizes, latent_dim)
+        self.decoder = Decoder(decoder_layer_sizes, latent_dim, last_nn_layer_decoder)
 
     def forward(self, x):
         """
@@ -102,12 +105,14 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
 
-    def __init__(self, layer_sizes, latent_dim):
+    def __init__(self, layer_sizes, latent_dim, last_nn_layer_decoder):
         super(Decoder, self).__init__()
         """
         Arguments:
             layer_sizes (list[int]): list of sizes of the linear layers of the decoder.
             latent_dim (int): dimension of latent space, i.e. dimension out input of the decoder.
+            last_nn_layer_decoder (string): last non-linear layer of the decoder,
+                                            the output will be the reconstructed input.
 
         """
 
@@ -130,7 +135,12 @@ class Decoder(nn.Module):
         else:
             self.out_linear = nn.Linear(latent_dim, layer_sizes[-1])
 
-        self.out_non_linear = nn.ReLU()
+        if last_nn_layer_decoder == 'ReLU':
+            self.out_non_linear = nn.ReLU()
+        elif  last_nn_layer_decoder == 'Identity':
+            self.out_non_linear = nn.Identity()
+        elif last_nn_layer_decoder == 'Softmax':
+            self.out_non_linear = nn.Softmax(dim=1)
 
     def forward(self, z):
         """

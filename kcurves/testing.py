@@ -7,6 +7,7 @@ from helpers import plot_X2D_visualization, create_writer, get_regularization_hy
 from torch.utils.data import DataLoader
 from _datetime import datetime
 from clustering import k_means
+import torch.nn.functional as F
 
 def test(cfg_path, model, data_set):
     """
@@ -27,14 +28,13 @@ def test(cfg_path, model, data_set):
     show_images = cfg_file["tracing"]["show_images"]
     images_to_show = cfg_file["tracing"]["images_to_show"]
 
-    # get the regularization hyperparameters
-    dic_regularization_types, dic_scalar_hyperparameters = get_regularization_hyperparameters(cfg_path)
+   # get the regularization hyperparameters
+    dic_regularization_types, dic_hyperparameters = get_regularization_hyperparameters(cfg_path)
     str_reg_types = make_string_from_dic(dic_regularization_types)
-    str_scalar_hyperparameters = make_string_from_dic(dic_scalar_hyperparameters)
-
+    str_hyperparameters = make_string_from_dic(dic_hyperparameters)
     # create a path for the log directory that includes the date and the hyperparameters for the regularization
     path_log_dir = cfg_file["model"]["path"] + "log_testing_" + datetime.now().strftime("%d.%m.%Y-%H:%M:%S") + \
-                   "\n" + str_reg_types + "\n" + str_scalar_hyperparameters
+                   "\n" + str_reg_types + "\n" + str_hyperparameters
 
     writer = create_writer(path_log_dir)
 
@@ -53,7 +53,7 @@ def test(cfg_path, model, data_set):
     print("Starting testing on {} data in mode {}...".format(cfg_file["data"]["data_set"], mode_forced))
 
     # numpy array to store the vectors in the latent space for each sample
-    X_2D = None
+    H_2D = None
     labels = None
     list_images = [] # list for images in case of MNIST data set
 
@@ -81,10 +81,10 @@ def test(cfg_path, model, data_set):
         h = model.encoder(x).detach().numpy()
 
         if batch_idx == 0:
-            X_2D = h
+            H_2D = h
             labels = y
         else:
-            X_2D = np.vstack((X_2D, h))
+            H_2D = np.vstack((H_2D, h))
             labels = np.hstack((labels, y))
 
         # Get the reconstrunction from the autoencoder
@@ -96,7 +96,7 @@ def test(cfg_path, model, data_set):
                 img_reconstructed = x_reconstructed.view(-1, 28, 28).detach().numpy()[idx_random]
                 list_images.append((img_original, img_reconstructed))
 
-    print("X_2D shape: ", X_2D.shape)
+    print("H_2D shape: ", H_2D.shape)
 
     if show_images:
         writer.add_figure('originals vs reconstructed', imshow(list_images))
@@ -106,22 +106,22 @@ def test(cfg_path, model, data_set):
         title = "Encoder output on {} data in mode {} with true labels".format(cfg_file["data"]["data_set"], mode_forced)
 
         writer.add_figure('01 Visualization of {} data latent space 2D'.format(mode_forced),
-                          plot_X2D_visualization(X_2D, labels, title = title, num_classes = num_classes))
+                          plot_X2D_visualization(H_2D, labels, title = title, num_classes = num_classes))
 
         # TODO: Consider to put the following code in a different module
         # code for visualization of clustering in latent space
-        centers_k_means, labels_k_means = k_means(X_2D, n_clusters = num_classes)
+        centers_k_means, labels_k_means = k_means(H_2D, n_clusters = num_classes)
         title = "K-means on encoder output on {} data in mode {}".format(cfg_file["data"]["data_set"],
                                                                                           mode_forced)
 
         writer.add_figure('02 Visualization of k-means on {} data in latent space 2D'.format(mode_forced),
-                          plot_X2D_visualization(X_2D, labels_k_means, title=title, num_classes=num_classes,
+                          plot_X2D_visualization(H_2D, labels_k_means, title=title, num_classes=num_classes,
                                                  cluster_centers=centers_k_means))
 
         # leave the repeated code, because otherwise the last added image does not appear.
         # It seems to be a bug from tensorboard, although more investigation is required.
         writer.add_figure('02 Visualization of k-means on {} data in latent space 2D'.format(mode_forced),
-                          plot_X2D_visualization(X_2D, labels_k_means, title=title, num_classes=num_classes,
+                          plot_X2D_visualization(H_2D, labels_k_means, title=title, num_classes=num_classes,
                                                  cluster_centers=centers_k_means))
 
 
