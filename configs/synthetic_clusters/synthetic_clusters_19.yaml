@@ -1,0 +1,36 @@
+name: synthetic_clusters_19
+data:
+  data_set: synthetic_clusters
+  train: ./data/synthetic_clusters/train/19/
+  test: ./data/synthetic_clusters/test/19/
+  num_classes: 2
+train:
+  batch_size: 128
+  num_epochs: 100
+  alpha_min: 0.01
+  alpha_max: 0.5
+  beta: 0.05
+  lambda: 0.0001
+  lr: 0.001
+  batch_frequency_loss: 1
+test:
+  mode_forced: True
+  batch_size: 128
+model:
+  path: ./models/synthetic_clusters/19/
+  name: model_clusters_19
+  save: True
+  device: cpu
+  encoder:
+    layer_sizes: [2]
+    last_nn_layer: Identity
+  decoder:
+    layer_sizes: [2]
+    last_nn_layer: Identity
+  input_dim: 2
+  latent_dim: 2
+tracing:
+  show_images: False
+  images_to_show: 10
+  visualize_latent: True
+  batch_frequency: 10

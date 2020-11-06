@@ -23,33 +23,54 @@ def generate_synthetic_clusters(cfg_path, verbose = True):
 
     writer = SummaryWriter(log_dir=log_tensorboard)
 
-    centers = []
-    for center in cfg_file["clusters"]["centers"]:
-        centers.append(tuple(center))
+    # centers = []
+    # for center in cfg_file["clusters"]["centers"]:
+    #     centers.append(tuple(center))
+    # std_centers = cfg_file["clusters"]["std_centers"]
 
-    std_centers = cfg_file["clusters"]["std_centers"]
+    num_centers = cfg_file["clusters"]["num_centers"]
+    center_box = tuple(cfg_file["clusters"]["center_box"])
+    cluster_std = cfg_file["clusters"]["cluster_std"]
+    random_state = cfg_file["clusters"]["random_state"]
     n_samples_train = cfg_file["data"]["train"]["num_samples"]
     n_samples_test = cfg_file["data"]["test"]["num_samples"]
     dim = cfg_file["clusters"]["dim"]
 
-    print("std_centers: ", std_centers)
-    print("centers: ", centers)
-
     if verbose:
         print("Generating clusters...")
 
-    X_train_raw, Y_train = make_blobs(n_samples = n_samples_train, cluster_std = std_centers,
-                                  centers = centers, n_features = dim, random_state = 1)
+    # generate training data given the hyperparameters with the help of make_blobs function
+    X_train_raw, Y_train, centers_train = make_blobs(n_samples = n_samples_train, n_features = dim,
+                                                     centers = num_centers, center_box = center_box,
+                                                     cluster_std = cluster_std, shuffle = True,
+                                                     random_state = random_state, return_centers = True)
 
-    X_test_raw, Y_test = make_blobs(n_samples = n_samples_test, cluster_std = std_centers,
-                                  centers = centers, n_features = dim, random_state = 1)
+    # generate the test data with the same centers as the training data
+    X_test_raw, Y_test, centers_test = make_blobs(n_samples = n_samples_test, n_features = dim,
+                                                  centers = centers_train, cluster_std = cluster_std,
+                                                  shuffle = True, random_state = random_state, return_centers = True)
+
+    # code to handle when the clusters are too close
+    while np.linalg.norm(centers_train[0] - centers_train[1]) <= 2*cluster_std:
+        random_state += 1
+        # generate training data given the hyperparameters with the help of make_blobs function
+        X_train_raw, Y_train, centers_train = make_blobs(n_samples=n_samples_train, n_features=dim,
+                                                         centers=num_centers, center_box=center_box,
+                                                         cluster_std=cluster_std, shuffle=True,
+                                                         random_state=random_state, return_centers=True)
+
+        # generate the test data with the same centers as the training data
+        X_test_raw, Y_test, centers_test = make_blobs(n_samples=n_samples_test, n_features=dim,
+                                                      centers=centers_train, cluster_std=cluster_std,
+                                                      shuffle=True, random_state=random_state, return_centers=True)
 
     if cfg_file["data"]["normalize"]:
         X_train = normalize_data(X_train_raw)
         X_test = normalize_data(X_test_raw)
     elif cfg_file["data"]["scale"]:
-        X_train = scale_data(X_train_raw)
-        X_test = scale_data(X_test_raw)
+        scale_factor = cfg_file["data"]["scale_factor"]
+        X_train = scale_data(X_train_raw, scale_factor)
+        X_test = scale_data(X_test_raw, scale_factor)
     else:
         X_train = X_train_raw
         X_test = X_test_raw
@@ -76,24 +97,24 @@ def generate_synthetic_clusters(cfg_path, verbose = True):
         title = "Training data (raw)"
         writer.add_figure('01 Visualization 2D training data (raw) ',
                           plot_X2D_visualization(X_train_raw, Y_train,
-                                                 title = title, num_classes = len(centers)))
+                                                 title = title, num_classes = num_centers))
 
         title = "Training data"
         writer.add_figure('01.1 Visualization 2D training data',
-                          plot_X2D_visualization(X_train, Y_train, title=title, num_classes=len(centers)))
+                          plot_X2D_visualization(X_train, Y_train, title=title, num_classes = num_centers))
 
         # visualize test data in 2D
 
         title = "Test data (raw)"
         writer.add_figure('02 Visualization 2D test data (raw)',
                           plot_X2D_visualization(X_test_raw, Y_test,
-                                                 title=title, num_classes=len(centers)))
+                                                 title=title, num_classes = num_centers))
         title = "Test data"
         writer.add_figure('02.1 Visualization 2D test data',
-                          plot_X2D_visualization(X_test, Y_test, title=title, num_classes=len(centers)))
+                          plot_X2D_visualization(X_test, Y_test, title=title, num_classes = num_centers))
 
         writer.add_figure('02.1 Visualization 2D test data',
-                          plot_X2D_visualization(X_test, Y_test, title=title, num_classes=len(centers)))
+                          plot_X2D_visualization(X_test, Y_test, title=title, num_classes = num_centers))
 
 
     if verbose:

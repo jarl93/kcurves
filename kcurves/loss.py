@@ -164,7 +164,7 @@ def loss_function(x, x_reconstructed, h, autoencoder, scalar_hyperparameters, re
 
     return loss_batch
 
-def loss_function_clusters(x, x_reconstructed, h, centers, lambda_, alpha_):
+def loss_function_clusters(x, x_reconstructed, h, autoencoder, centers, alpha_, beta_, lambda_):
 
     # Compute the MSE loss between the input and the reconstruction
     loss_MSE = nn.MSELoss()
@@ -178,9 +178,12 @@ def loss_function_clusters(x, x_reconstructed, h, centers, lambda_, alpha_):
     loss_dist = torch.sum(I_relaxed * dist)
 
     # scale loss_dist with lambda_
-    loss_dist *= lambda_
-
+    loss_dist *= beta_
     loss_batch += loss_dist
+
+    # add the regularization loss
+    loss_L1 = L1_regularization(autoencoder, x, lambda_)
+    loss_batch += loss_L1
 
     return loss_batch
 

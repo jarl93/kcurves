@@ -87,16 +87,17 @@ def normalize_data(X, verbose=False):
     X = (X - mean) / var
 
     return X
-def scale_data(X, verbose = False):
+def scale_data(X, scale_factor, verbose = False):
     """
     Scales data, such that all the points are in the square bottom_left = (-1,-1), upper_right = (1,1).
     :param X: numpy array with the data.
+    :param scale_factor: factor to scale all the values.
     :param verbose: boolean varaible to print sanity checks.
     :return: X_scaled: numpy array with the data scaled.
     """
     X_abs = np.absolute(X)
     x_max = np.max(X_abs)
-    X_scaled = X / x_max
+    X_scaled = scale_factor * X / x_max
 
     return X_scaled
 

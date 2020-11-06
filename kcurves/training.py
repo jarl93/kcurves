@@ -45,12 +45,14 @@ def train(cfg_path, model, data_set, verbose = True):
         # the dimension of the latent space corresponds to the number of clusters
         dim = cfg_file["model"]["latent_dim"]
         centers = torch.eye(dim) # centers based on the identity matrix
-        lambda_ = cfg_file["train"]["lambda"]
+
         alpha_min = cfg_file["train"]["alpha_min"] # min value for temperature hyperparameter (alpha)
         alpha_max = cfg_file["train"]["alpha_max"] # max value for temperature hyperparameter (alpha)
         # compute the increment of alpha by considering the number of epochs and the number of batches
         alpha_inc = (alpha_max - alpha_min)/(num_batches * num_epochs)
         alpha_ = alpha_min
+        beta_ = cfg_file["train"]["beta"] # scalar for loss of membership and distance to the clusters
+        lambda_ = cfg_file["train"]["lambda"] # scalar for L1 regularization
 
     # create a path for the log directory that includes the dates
     # TODO: include the other hyperparameters for the training
@@ -92,7 +94,7 @@ def train(cfg_path, model, data_set, verbose = True):
             if cfg_file["data"]["data_set"] == "synthetic":
                 loss = loss_function(x, x_reconstructed, h, model, scalar_hyperparameters, regularization_types)
             elif cfg_file["data"]["data_set"] == "synthetic_clusters":
-                loss = loss_function_clusters(x, x_reconstructed, h, centers, lambda_, alpha_)
+                loss = loss_function_clusters(x, x_reconstructed, h, model, centers, alpha_, beta_, lambda_)
                 alpha_ += alpha_inc
 
             loss.backward()

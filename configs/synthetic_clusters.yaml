@@ -9,11 +9,12 @@ data:
 train:
   batch_size: 128
   num_epochs: 100
-
-  # scalar hyperparameters for the regularization terms
-  lambda: 0.01 # scalar for loss of membership and distance to the clusters
+  # min and max for temperature hyperparameter
   alpha_min: 0.01
   alpha_max: 0.5
+  # scalar hyperparameters for the regularization terms
+  beta: 0.01 # scalar for loss of membership and distance to the clusters
+  lambda: 0.001  # scalar for L1 regularization
   lr: 0.001
   batch_frequency_loss: 1
 

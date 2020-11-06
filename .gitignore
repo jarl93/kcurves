@@ -4,3 +4,7 @@ k-curves.ipynb
 short-code-testing.ipynb
 kcurves/__pycache__/
 .ipynb_checkpoints/
+.configs/
+.data/
+.models/
+k-means-autoencoder.ipynb

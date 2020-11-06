@@ -206,10 +206,12 @@ def get_regularization_hyperparameters(cfg_path):
         rho_ = cfg_file["train"]["rho"]
         dic_hyperparameters = {"lambda": lambda_, "beta": beta_, "gamma": gamma_, "rho": rho_}
     elif cfg_file["data"]["data_set"] == "synthetic_clusters":
-        lambda_ = cfg_file["train"]["lambda"]
+
         alpha_min = cfg_file["train"]["alpha_min"]
         alpha_max = cfg_file["train"]["alpha_max"]
-        dic_hyperparameters = {"lambda": lambda_, "alpha_min": alpha_min, "alpha_max": alpha_max}
+        beta_ = cfg_file["train"]["beta"]
+        lambda_ = cfg_file["train"]["lambda"]
+        dic_hyperparameters = {"alpha_min": alpha_min, "alpha_max": alpha_max, "beta": beta_, "lambda": lambda_}
 
     return dic_regularization_types, dic_hyperparameters
 
