@@ -5,7 +5,7 @@ F1:
   frec: 0.01
   interval: [0, 100]
   shift: 20
-  char_to_plot: 'o'
+  char_to_plot: 'x'
   color_to_plot: 'red'
   train_num_samples: 3000
   test_num_samples: 500
@@ -24,13 +24,14 @@ data:
   save: True
   plot: True
   normalize: True
+  transformation: False
   train:
-    path: "./data/synthetic/train/"
+    path: "./data/synthetic_functions/train/"
   test:
-    path: "./data/synthetic/test/"
+    path: "./data/synthetic_functions/test/"
 
   plots:
-    path: "./data/synthetic/plots/"
+    path: "./data/synthetic_functions/plots/"
 
 
 transformation:

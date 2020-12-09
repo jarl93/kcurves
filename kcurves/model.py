@@ -1,5 +1,7 @@
 # libraries
 import torch.nn as nn
+import torch
+import numpy as np
 
 class AE(nn.Module):
     def __init__(self, input_dim, encoder_layer_sizes, decoder_layer_sizes, latent_dim,
@@ -36,7 +38,7 @@ class AE(nn.Module):
         """
 
         # Map the input to the latent space (encoding)
-        z = self.encoder(x)
+        z, z1, z2 = self.encoder(x)
 
         # Map the latent variable to the input/output space (decoding),
         # i.e., get the reconstruction from the latent space
@@ -61,6 +63,7 @@ class Encoder(nn.Module):
         self.hidden = nn.ModuleList()
         for k in range(len(layer_sizes) - 1):
             self.hidden.append(nn.Linear(layer_sizes[k], layer_sizes[k + 1]))
+            #self.hidden.append(nn.LeakyReLU())
             self.hidden.append(nn.ReLU())
 
         # Output layer from the encoder
@@ -75,7 +78,18 @@ class Encoder(nn.Module):
         elif last_nn_layer_encoder == 'Softmax':
             self.last_nn_layer_encoder = nn.Softmax(dim=1)
 
-        # TODO: add code for the case F.softmax(z, dim=1) * z
+
+        # angle and vectors for the rotation
+        # # transformation 1
+        # self.theta_1 = nn.Parameter(torch.tensor(np.pi/4))
+        # self.v_in_1 = nn.Parameter(torch.rand(2))
+        # self.v_out_1 = nn.Parameter(torch.rand(2))
+        #
+        # # transformation 2
+        # self.theta_2 = nn.Parameter(torch.tensor(7*np.pi/4))
+        # self.v_in_2 = nn.Parameter(torch.rand(2))
+        # self.v_out_2 = nn.Parameter(torch.rand(2))
+
 
     def forward(self, x):
         """
@@ -98,7 +112,29 @@ class Encoder(nn.Module):
         # Do the forward for the last non-linear layer
         z = self.last_nn_layer_encoder(x)
 
-        # TODO: add code for the case F.softmax(z, dim=1) * z
+        # make the rotations and translations
+
+        # # transformation 1
+        # r1 = torch.zeros(2, 2)
+        # r1[0, 0] = torch.cos(self.theta_1)
+        # r1[0, 1] = torch.sin(self.theta_1)
+        # r1[1, 0] = -1*torch.sin(self.theta_1)
+        # r1[1, 1] = torch.cos(self.theta_1)
+        # v_in_1  = self.v_in_1.repeat(z.shape[0]).view(-1, z.shape[1])
+        # v_out_1 = self.v_out_1.repeat(z.shape[0]).view(-1, z.shape[1])
+        # z1 = torch.matmul(v_in_1 + z, r1) + v_out_1
+        #
+        # # transformation 2
+        # r2 = torch.zeros(2, 2)
+        # r2[0, 0] = torch.cos(self.theta_2)
+        # r2[0, 1] = torch.sin(self.theta_2)
+        # r2[1, 0] = -1*torch.sin(self.theta_2)
+        # r2[1, 1] = torch.cos(self.theta_2)
+        # v_in_2  = self.v_in_2.repeat(z.shape[0]).view(-1, z.shape[1])
+        # v_out_2 = self.v_out_2.repeat(z.shape[0]).view(-1, z.shape[1])
+        # z2 = torch.matmul(v_in_2 + z, r2) + v_out_2
+
+        # return z, z1, z2
 
         return z
 
@@ -123,11 +159,14 @@ class Decoder(nn.Module):
             # Append the first layer of the decoder
             self.hidden.append(nn.Linear(latent_dim, layer_sizes[0]))
             self.hidden.append(nn.ReLU())
+            #self.hidden.append(nn.LeakyReLU())
 
             # Append the layers in between
             for k in range(len(layer_sizes) - 2):
                 self.hidden.append(nn.Linear(layer_sizes[k], layer_sizes[k + 1]))
                 self.hidden.append(nn.ReLU())
+                #self.hidden.append(nn.LeakyReLU())
+
             # Append the last layer which considers the last element
             # from the list of layer_sizes, this could be done in the for loop
             # but it's done that way for the sake of neatness

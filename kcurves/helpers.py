@@ -6,6 +6,7 @@ from sklearn.decomposition import PCA
 import yaml
 from torch.utils.tensorboard import SummaryWriter
 import torch
+import torch.nn.functional as F
 
 def imshow(list_images):
     """
@@ -37,16 +38,22 @@ def imshow(list_images):
 
     return fig
 
-def plot_X2D_visualization(X_2D, labels, title, num_classes, cluster_centers=None):
+def plot_X2D_visualization(X, labels, title, num_classes, cluster_centers=None):
     """
-    Plots the visualization of the latent space, by separating the classes.
+    Plots the visualization of the data in 2D. If the dimension of the data is higher
+    than 2, then it applies PCA to the data.
     Arguments:
-        X_2D: data in the latent space(2D).
+        X: data to be plotted.
         labels: true labels of the data.
         title: string with the title of the graphic.
         num_classes: Number of classes.
         cluster_centers: Cluster centers, if any, to be plotted.
     """
+    if X.shape[1] > 2:
+        X_2D = run_PCA(X)
+    else:
+        X_2D = X
+
     plt.switch_backend('agg')
     fig = plt.figure(figsize=(10, 10))
     ax = plt.gca()
@@ -64,6 +71,112 @@ def plot_X2D_visualization(X_2D, labels, title, num_classes, cluster_centers=Non
     ax.set_title(title)
 
     return fig
+
+def plot_2D_visualization_clusters(list_X, list_vars, labels, titles, num_classes, levels_contour):
+    """
+    Visualizes outputs (inputs) of the auto-encoder.
+    :param list_X: List [X_input, X_reconstructed, H, softmax(H)], where:
+        -X_input is the input data
+        -X_reconstructed is the reconstructed data(output of the auto-encoder)
+        -H is the latent vector.
+        -softmax(H) is the softmax over the latent vector.
+    :param list_var: values x_i, y_i and z_ent and z_dist tp plot the objective functions.
+    :param labels: true labels of the data.
+    :param titles: strings with the titles for each graphic.
+    :param num_classes: Number of classes.
+    :return: fig: figure with the plots.
+    """
+
+    for i in range(len(list_X)):
+        if list_X[i].shape[1] > 2:
+            print("Running PCA...")
+            list_X[i] = run_PCA(list_X[i])
+
+    list_cx = [0, 0, 1, 1, 2, 2]
+    list_cy = [0, 1, 0, 1, 0, 1]
+
+    plt.switch_backend('agg')
+    fig, axs = plt.subplots(3, 2, figsize=(10, 15))
+
+    for i in range(len(list_X)):
+        cx = list_cx[i]
+        cy = list_cy[i]
+        X  = list_X[i]
+        title = titles[i]
+        # loop to plot the clusters depending on the given labels
+        for j in range(num_classes):
+            idx = np.where(labels == j)
+            axs[cx, cy].scatter(X[idx, 0], X[idx, 1], cmap='viridis')
+            axs[cx, cy].set_title(title)
+
+
+    # -----------------------------Frozen code-------------------------------
+    # x_i, y_i, z_i_ent, z_i_dist = list_vars
+    # # plot graphic for entropy
+    # im_20 = axs[2, 0].contourf(x_i ,y_i, z_i_ent, levels = levels_contour)
+    # axs[2, 0].set_title(titles[4])
+    # fig.colorbar(im_20, ax = axs[2, 0])
+    # # plot  graphic for distance
+    # im_21 = axs[2, 1].contourf(x_i, y_i, z_i_dist, levels=levels_contour)
+    # axs[2, 1].set_title(titles[5])
+    # fig.colorbar(im_21, ax=axs[2, 1])
+
+    return fig
+
+def plot_2D_visualization_generation_functions(list_functions, X, labels, num_classes, labels_kmeans,
+                                               cluster_centers, titles):
+    """
+    Visualizes generation of synthetic data via functions (functions and data generated)
+    and the result of applying k-means on the synthetic data.
+    :param list_functions:
+    :param X:
+    :param labels: true labels.
+    :param num_classes: number of classes (clusters).
+    :param labels_kmeans: labels after applying vanilla k-means.
+    :param cluster_centers: cluster centers.
+    :param titles: titles for each plot.
+    :return:
+        -fig: Figure with the plots.
+    """
+
+    if X.shape[1] > 2:
+        X = run_PCA(X)
+
+    plt.switch_backend('agg')
+    fig, axs = plt.subplots(2, 2, figsize=(20, 20))
+
+    # make plot for functions
+    list_legends = []
+    for idx, f in enumerate(list_functions):
+        axs[0, 0].plot(f.x, f.y_noisy, f.char_to_plot) # Plot noisy data
+        list_legends.append("Noisy data from Function F{}".format(idx+1))
+        axs[0, 0].plot(f.x, f.y, color=f.color_to_plot) # Plot f(x)
+        list_legends.append("Function F{}".format(idx+1))
+
+    axs[0,0].set_title(titles[0])
+    axs[0,0].legend(list_legends)
+
+    # make plot for synthetic data (training or test data)
+    for i in range(num_classes):
+        idx = np.where(labels == i)
+        axs[0, 1].scatter(X[idx, 0], X[idx, 1], cmap='viridis')
+        axs[0, 1].set_title(titles[1])
+
+    # make plot for k-means on synthetic data (training or test data)
+    for i in range(num_classes):
+        idx = np.where(labels_kmeans == i) # plot the clusters depending on the given labels
+        axs[1, 0].scatter(X[idx, 0], X[idx, 1], cmap='viridis')
+
+    # plot the center of the clusters if any
+    if cluster_centers is not None:
+        axs[1, 0].scatter(cluster_centers[:, 0], cluster_centers[:, 1], c='black', s=100, alpha=0.5)
+
+    list_legend = ["class {}".format(i) for i in range(num_classes)]
+    axs[1, 0].legend(list_legend)
+    axs[1, 0].set_title(titles[2])
+
+    return fig
+
 
 def plot_functions(list_functions, title):
     """
@@ -138,6 +251,67 @@ def sigmoid(x):
     """
     return 1 / (1 + np.exp(-x))
 
+def get_softmax(X_2D):
+    """
+    Computes the softmax of a numpy array or a torch tensor.
+    :param X_2D: 2-dimensional array (N, 2).
+    :return:
+        - X_2D_softmax: numpy array with the softmax of X_2D.
+    """
+
+    if type(X_2D) is np.ndarray:
+        T_2D = torch.from_numpy(X_2D)
+    else:
+        T_2D = X_2D
+
+    T_2D_softmax = F.softmax(T_2D, dim = 1)
+    X_2D_softmax = T_2D_softmax.detach().numpy()
+
+    return X_2D_softmax
+
+
+def softmax_pair(x, y, absolute =True, alpha=None):
+    """
+    Computes the softmax of the pair (x,y).
+    :param x: x-coordinate (float).
+    :param y: y-coordinate (float).
+    :param alpha: temperature parameter (float).
+    :return:
+        -a: softmax x-coordinate
+        -b: softmax y-coordinate
+    """
+    if absolute:
+        x = np.absolute(x)
+        y = np.absolute(y)
+    if alpha is not None:
+        a = np.exp(-alpha * x) / (np.exp(-alpha * x) + np.exp(-alpha * y))
+        b = np.exp(-alpha * y) / (np.exp(-alpha * x) + np.exp(-alpha * y))
+    else:
+        a = np.exp(x) / (np.exp(x) + np.exp(y))
+        b = np.exp(y) / (np.exp(x) + np.exp(y))
+
+    return a, b
+
+
+def entropy_pair(x, y):
+    """
+    Computes the cross entropy of a pair(x,y)
+    :param x: x-coordinate (float).
+    :param y: y-coordinate (float).
+    :return: entropy of the pair.
+    """
+    return -x * np.log(x) - y * np.log(y)
+
+def distance_axes_pair(x, y):
+    """
+
+    :param x:
+    :param y:
+    :return:
+    """
+    a, b = softmax_pair(x, y)
+    return a * np.absolute(x) + b * np.absolute(y)
+
 def pairwise_distances(x, y):
     '''
     Arguments: x is a (N,d) tensor
@@ -178,42 +352,36 @@ def create_writer(path_log_dir):
 
     return writer
 
-def get_regularization_hyperparameters(cfg_path):
+def get_hyperparameters(cfg_path):
     """
-    Extracts the regularization hyperparameters: the regularization types and
-    the scalar factors for each of those, from the config file.
+    Extracts the hyperparameters to make a dictionary out of it.
     :param cfg_path: path for the config file.
     :return:
-        - dic_regularization_types: dictionary with boolean values depending on whether the regularization is activated or not.
-        - dic_scalar_hyperparameters: dictionary with hyperparameters to scale the regularization terms.
+        - dic_hyperparameters: dictionary with the hyperparameters.
     """
 
     cfg_file = load_config(cfg_path)
 
-    dic_regularization_types = {}
-    dic_hyperparameters = {}
+    lr = cfg_file["train"]["lr"]
+    num_epochs = cfg_file["train"]["num_epochs"]
+    type_dist = cfg_file["train"]["type_dist"]
+    type_loss = cfg_file["train"]["type_loss"]
+    alpha_ = cfg_file["train"]["alpha"]
+    beta_type = cfg_file["train"]["beta_type"]
+    beta_fixed = cfg_file["train"]["beta_fixed"]
+    beta_min = cfg_file["train"]["beta_min"]
+    beta_max = cfg_file["train"]["beta_max"]
+    gamma_ = cfg_file["train"]["gamma"]
+    lambda_ = cfg_file["train"]["lambda"]
 
-    if cfg_file["data"]["data_set"] == "synthetic":
-        # types of regularization
-        reg_L1 = cfg_file["train"]["reg_L1"]
-        reg_KL = cfg_file["train"]["reg_KL"]
-        reg_entropy = cfg_file["train"]["reg_entropy"]
-        dic_regularization_types = {"reg_L1": reg_L1, "reg_KL": reg_KL, "reg_entropy": reg_entropy}
-        # hyperparamters (scalar factors) for the regularization
-        lambda_ = cfg_file["train"]["lambda"]
-        beta_ = cfg_file["train"]["beta"]
-        gamma_ = cfg_file["train"]["gamma"]
-        rho_ = cfg_file["train"]["rho"]
-        dic_hyperparameters = {"lambda": lambda_, "beta": beta_, "gamma": gamma_, "rho": rho_}
-    elif cfg_file["data"]["data_set"] == "synthetic_clusters":
+    dic_hyperparameters = {"type_dist": type_dist, "type_loss": type_loss,
+                           "beta_type": beta_type, "beta_fixed": beta_fixed,
+                           "beta_min": beta_min, "beta_max": beta_max,
+                           "gamma": gamma_, "lambda": lambda_,
+                           "num_epochs": num_epochs,
+                           "alpha": alpha_, "lr": lr}
 
-        alpha_min = cfg_file["train"]["alpha_min"]
-        alpha_max = cfg_file["train"]["alpha_max"]
-        beta_ = cfg_file["train"]["beta"]
-        lambda_ = cfg_file["train"]["lambda"]
-        dic_hyperparameters = {"alpha_min": alpha_min, "alpha_max": alpha_max, "beta": beta_, "lambda": lambda_}
-
-    return dic_regularization_types, dic_hyperparameters
+    return dic_hyperparameters
 
 def make_string_from_dic(dic):
     """
@@ -228,6 +396,24 @@ def make_string_from_dic(dic):
     for key, value in dic.items():
         str_ += key + "=" +str(value)+"_"
 
-    str_ = str_[:-1] # remove the last character of the string
+    str_ = str_[:-1] # remove the last '_' from the string
 
     return str_
+
+def add_zeros (n, lim):
+    """
+    Adds zeros at the beginning of a number w.r.t to lim.
+    :param n: number to add zeros at the beginning.
+    :param lim: upper bound for n.
+    :return:
+        - num: string with the number with zeros at the beginning.
+    """
+    num = ""
+    # put 0's at the beginning w.r.t. lim
+    dif = int(np.log10(lim)) - int(np.log10(n))
+    for j in range(dif):
+        num += "0"
+    # add the number given by n
+    num += str(n)
+
+    return num

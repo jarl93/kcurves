@@ -1,6 +1,7 @@
 import os
 import argparse
-from helpers import transform_low_to_high, load_config, sigmoid, plot_functions, plot_X2D_visualization
+from helpers import transform_low_to_high, load_config, sigmoid, plot_functions, plot_X2D_visualization, \
+    plot_2D_visualization_generation_functions
 from data_management import normalize_data, scale_data
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
@@ -65,9 +66,13 @@ def generate_synthetic_clusters(cfg_path, verbose = True):
                                                       shuffle=True, random_state=random_state, return_centers=True)
 
     if cfg_file["data"]["normalize"]:
+        if verbose:
+            print("Normalizing data...")
         X_train = normalize_data(X_train_raw)
         X_test = normalize_data(X_test_raw)
     elif cfg_file["data"]["scale"]:
+        if verbose:
+            print("Scaling data...")
         scale_factor = cfg_file["data"]["scale_factor"]
         X_train = scale_data(X_train_raw, scale_factor)
         X_test = scale_data(X_test_raw, scale_factor)
@@ -122,7 +127,7 @@ def generate_synthetic_clusters(cfg_path, verbose = True):
 
     return X_train, Y_train, X_test, Y_test
 
-def generate_synthetic(cfg_path, verbose = True):
+def generate_synthetic_functions(cfg_path, verbose = True):
     """
     Add documentation
 
@@ -170,164 +175,114 @@ def generate_synthetic(cfg_path, verbose = True):
 
     # generation of the training and test data
     F1_train.generate_data(cfg_file["F1"]["train_num_samples"])
-    F2_train.generate_data(cfg_file["F1"]["train_num_samples"])
+    F2_train.generate_data(cfg_file["F2"]["train_num_samples"])
     F1_test.generate_data(cfg_file["F1"]["test_num_samples"])
-    F2_test.generate_data(cfg_file["F1"]["test_num_samples"])
+    F2_test.generate_data(cfg_file["F2"]["test_num_samples"])
 
+    # TODO: adapt code for list of functions if required
     # define lists with the defined functions
     list_F_train = [F1_train, F2_train]
     list_F_test = [F1_test, F2_test]
 
-    if verbose:
-        print("Creating non-linear transformation...")
+    num_classes = len(list_F_train)
 
-    # apply non-linear transformation to bring lower-dimensional data to a higher-dimensional space
-    list_dimensions = []
-    for dimension in cfg_file["transformation"]["list_dimensions"]:
-        list_dimensions.append(tuple(dimension))
+    # get raw data from the functions
+    X_train_raw = np.vstack((F1_train.vec, F2_train.vec))
+    X_test_raw = np.vstack((F1_test.vec, F2_test.vec))
 
-    num_transformations = len(list_dimensions)
-    list_W = []
-
-    # loop to store the linear transformations in a list
-    for i in range(num_transformations):
-        W = np.random.normal(0, 1, size = list_dimensions[i])
-        list_W.append(W)
-
-
-    # TODO: add more non-linear functions if required
-
-    if cfg_file["transformation"]["non_linear"] == "sigmoid":
-        F_non_linear = sigmoid
-
-    # TODO: adapt code for list of training functions if required
-
-    # training data
-    X_train_low = np.vstack((F1_train.vec, F2_train.vec))
-    if cfg_file["data"]["normalize"]:
-        X_train_low_normalized = normalize_data(X_train_low, verbose=True)
-        # save the training data normalized
-        if cfg_file["data"]["save"]:
-            np.save(cfg_file["data"]["train"]["path"] + "X_low_normalized", X_train_low_normalized)
+    if cfg_file["data"]["transformation"]:
         if verbose:
-            print("Applying transformation to normalized training data...")
+            print("Creating non-linear transformation...")
 
-        X_train = transform_low_to_high(X_train_low_normalized, F_non_linear, list_W)
+        # transformations to bring lower-dimensional data to a higher-dimensional space
 
+        # define and store the linear transformations
+        list_dimensions = []
+        for dimension in cfg_file["transformation"]["list_dimensions"]:
+            list_dimensions.append(tuple(dimension))
+
+        num_transformations = len(list_dimensions)
+        list_W = []
+
+        for i in range(num_transformations):
+            W = np.random.normal(0, 1, size=list_dimensions[i])
+            list_W.append(W)
+
+        # TODO: add more non-linear functions if required
+        if cfg_file["transformation"]["non_linear"] == "sigmoid":
+            F_non_linear = sigmoid
+
+        if verbose:
+            print("Applying transformation to the data...")
+        X_train = transform_low_to_high(X_train_raw, F_non_linear, list_W)
+        X_test = transform_low_to_high(X_test_raw, F_non_linear, list_W)
     else:
-        if verbose:
-            print("Applying transformation to training data...")
-        X_train = transform_low_to_high(X_train_low, F_non_linear, list_W)
+        X_train = X_train_raw
+        X_test = X_test_raw
 
-    # labels of training data
+    if cfg_file["data"]["scale"]:
+        if verbose:
+            print("Scaling data...")
+        scale_factor = cfg_file["data"]["scale_factor"]
+        X_train = scale_data(X_train, scale_factor)
+        X_test = scale_data(X_test, scale_factor)
+    if cfg_file["data"]["normalize"]:
+        if verbose:
+            print("Normalizing data...")
+        X_train = normalize_data(X_train, verbose = True)
+        X_test = normalize_data(X_test, verbose = True)
+
+    # labels for training data
     labels_train0 = np.zeros(F1_train.vec.shape[0])
     labels_train1 = np.ones(F2_train.vec.shape[0])
     Y_train = np.hstack((labels_train0, labels_train1))
-
-    if verbose:
-        print("Transformation of training data completed!")
-
-    # TODO: adapt code for list of test functions if required
-
-    # test data
-    X_test_low = np.vstack((F1_test.vec, F2_test.vec))
-    if cfg_file["data"]["normalize"]:
-        X_test_low_normalized = normalize_data(X_test_low, verbose=True)
-
-        # save the test data nomalized
-        if cfg_file["data"]["save"]:
-            np.save(cfg_file["data"]["test"]["path"] + "X_low_normalized", X_test_low_normalized)
-        if verbose:
-            print("Applying transformation to normalized test data...")
-
-        X_test = transform_low_to_high(X_test_low_normalized, F_non_linear, list_W)
-    else:
-        if verbose:
-            print("Applying transformation to test data...")
-        X_test = transform_low_to_high(X_test_low, F_non_linear, list_W)
-
-    # labels of test data
+    # labels for test data
     labels_test0 = np.zeros(F1_test.vec.shape[0])
     labels_test1 = np.ones(F2_test.vec.shape[0])
     Y_test = np.hstack((labels_test0, labels_test1))
 
-    if verbose:
-        print("Transformation of test data completed!")
-
-    # run k-means on the training data
-    centers_train_low, labels_tain_low = k_means(X_train_low, n_clusters = len(list_F_train))
-    centers_train_low_normalized, labels_tain_low_normalized = \
-        k_means(X_train_low_normalized, n_clusters = len(list_F_train))
-
-    # run k-means on the test data
-    centers_test_low, labels_test_low = k_means(X_test_low, n_clusters = len(list_F_test))
-    centers_test_low_normalized, labels_test_normalized = \
-        k_means(X_test_low_normalized, n_clusters=len(list_F_test))
-
-
-
+    # save the training and test data
     if cfg_file["data"]["save"]:
         if verbose:
             print("Saving data...")
-        # save the training data
-        np.save(cfg_file["data"]["train"]["path"] + "X_low", X_train_low)
-        np.save(cfg_file["data"]["train"]["path"] + "X", X_train)
-        np.save(cfg_file["data"]["train"]["path"] + "Y", Y_train)
-        # save the test data
-        np.save(cfg_file["data"]["test"]["path"] + "X_low", X_test_low)
-        np.save(cfg_file["data"]["test"]["path"] + "X", X_test)
-        np.save(cfg_file["data"]["test"]["path"] + "Y", Y_test)
+        np.save(cfg_file["data"]["train"]["path"] + "X_train_raw", X_train_raw)
+        np.save(cfg_file["data"]["train"]["path"] + "X_train", X_train)
+        np.save(cfg_file["data"]["train"]["path"] + "Y_train", Y_train)
+        np.save(cfg_file["data"]["test"]["path"] + "X_test_raw", X_test_raw)
+        np.save(cfg_file["data"]["test"]["path"] + "X_test", X_test)
+        np.save(cfg_file["data"]["test"]["path"] + "Y_test", Y_test)
+
+    # run k-means on the training data
+    # centers_train_raw, labels_train_raw = k_means(X_train_raw, n_clusters = len(list_F_train))
+    centers_train, labels_kmeans_train = k_means(X_train, n_clusters = len(list_F_train))
+
+    # run k-means on the test data
+    # centers_test_raw, labels_test_raw = k_means(X_test_raw, n_clusters = len(list_F_test))
+    centers_test, labels_kmeans_test = k_means(X_test, n_clusters=len(list_F_test))
 
     if cfg_file["data"]["plot"]:
-
         if verbose:
             print("Plotting data...")
 
-        # plot functions and gaussian noisy data
-        writer.add_figure('01 Functions and gaussian noisy training data',
-                          plot_functions([F1_train, F2_train], "Train data generated"))
+        # plot the 2D visualization of the training data generated
+        titles = ["Functions and noisy data", "Training data", "K-means on training data"]
+        writer.add_figure('01 Visualization of training data generated ',
+                          plot_2D_visualization_generation_functions(list_functions = [F1_train, F2_train],
+                                                                     X = X_train, labels = Y_train,
+                                                                     num_classes = num_classes,
+                                                                     labels_kmeans = labels_kmeans_train,
+                                                                     cluster_centers = centers_train, titles = titles))
 
-        writer.add_figure('02 Functions and gaussian noisy test data',
-                          plot_functions([F1_test, F2_test], "Test data generated"))
-
-
-        # visualize training data in 2D
-
-        title = "k-means on synthetic training data in low-dimensional space"
-        writer.add_figure('03 Visualization 2D training data ',
-                          plot_X2D_visualization(X_train_low, labels_tain_low,
-                                                 title = title, num_classes = len(list_F_train),
-                                                 cluster_centers = centers_train_low))
-
-        title = "k-means on synthetic normalized training data in low-dimensional space"
-        writer.add_figure('03.1 Visualization 2D normalized training data',
-                           plot_X2D_visualization(X_train_low_normalized, labels_tain_low_normalized,
-                                                  title = title, num_classes = len(list_F_train),
-                                                  cluster_centers = centers_train_low_normalized))
-
-        # visualize test data in 2D
-        title = "k-means on synthetic test data in low-dimensional space"
-        writer.add_figure('04 Visualization 2D test data ',
-                          plot_X2D_visualization(X_test_low, labels_test_low,
-                                                 title = title, num_classes = len(list_F_test),
-                                                 cluster_centers = centers_test_low))
-
-        title = "k-means on synthetic normalized test data in low-dimensional space"
-        writer.add_figure('04.1 Visualization 2D normalized test data',
-                          plot_X2D_visualization(X_test_low_normalized, labels_test_normalized,
-                                                 title = title, num_classes = len(list_F_test),
-                                                 cluster_centers = centers_test_low_normalized))
-
-        # leave the repeated code, because otherwise the last image does not appear.
-        # It seems to be a bug from tensorboard, although more investigation is required.
-        writer.add_figure('04.1 Visualization 2D normalized test data',
-                          plot_X2D_visualization(X_test_low_normalized, labels_test_normalized,
-                                                 title = title, num_classes = len(list_F_test),
-                                                 cluster_centers = centers_test_low_normalized))
-
+        # plot the 2D visualization of the test data generated
+        titles = ["Functions and noisy data", "Test data", "K-means on test data"]
+        writer.add_figure('02 Visualization of test data generated ',
+                          plot_2D_visualization_generation_functions(list_functions = [F1_test, F2_test],
+                                                                     X = X_test, labels = Y_test,
+                                                                     num_classes = num_classes,
+                                                                     labels_kmeans = labels_kmeans_test,
+                                                                     cluster_centers = centers_test, titles = titles))
     if verbose:
         print("Data generation completed!")
-
 
     return X_train, Y_train, X_test, Y_test
 
@@ -340,7 +295,7 @@ if __name__ == "__main__":
     args = ap.parse_args()
 
     # generate synthetic data with sin waves
-    #generate_synthetic(cfg_path = args.config_path)
+    generate_synthetic_functions(cfg_path = args.config_path)
 
     # generate synthetic clusters (isotropic Gaussian blobs)
-    generate_synthetic_clusters(cfg_path=args.config_path)
+    # generate_synthetic_clusters(cfg_path = args.config_path)

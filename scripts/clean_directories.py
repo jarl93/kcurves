@@ -3,6 +3,7 @@ from helpers import create_dir
 import os
 import shutil
 import argparse
+from constants import NUM_TESTS, FILLER
 
 def delete_dir(path):
     """
@@ -27,6 +28,9 @@ def main():
     ap.add_argument('-cft', '--configs_training', action='store_true',
                     help='Clean the config files for training and testing.')
 
+    ap.add_argument('-e', '--evolution', action='store_true',
+                    help='Clean the directories of the models and graphs of the evolution of the network.')
+
     ap.add_argument('-m', '--models', action='store_true',
                     help='Clean the directories of the models and its respective plots.')
 
@@ -38,15 +42,14 @@ def main():
 
     args = ap.parse_args()
 
-    NUM_TESTS = 20
+    config_path ="./configs/synthetic_"+FILLER+"/"
+    config_generation_path = "./configs/synthetic_"+FILLER+"_generation/"
 
-    config_path ="./configs/synthetic_clusters/"
-    config_generation_path = "./configs/synthetic_generation_clusters/"
-
-    train_path = "./data/synthetic_clusters/train/"
-    test_path = "./data/synthetic_clusters/test/"
-    plot_path = "./data/synthetic_clusters/plots/"
-    model_path = "./models/synthetic_clusters/"
+    train_path = "./data/synthetic_"+FILLER+"/train/"
+    test_path = "./data/synthetic_"+FILLER+"/test/"
+    plot_path = "./data/synthetic_"+FILLER+"/plots/"
+    model_path = "./models/synthetic_"+FILLER+"/"
+    evolution_path = "./models/synthetic_" + FILLER + "_evolution/"
 
     if args.configs_generation or args.all:
         delete_dir(config_generation_path)
@@ -57,6 +60,7 @@ def main():
     list_test_paths = generate_list(test_path, NUM_TESTS, "/")
     list_plot_paths = generate_list(plot_path, NUM_TESTS, "/")
     list_model_paths = generate_list(model_path, NUM_TESTS, "/")
+    list_evolution_paths = generate_list(evolution_path, NUM_TESTS, "/")
 
     for i in range(1, NUM_TESTS+1):
         if args.data or args.all:
@@ -70,6 +74,9 @@ def main():
         if args.models or args.all:
             delete_dir(list_model_paths[i])
             create_dir(list_model_paths[i])
+        if args.evolution or args.all:
+            delete_dir(list_evolution_paths[i])
+            create_dir(list_evolution_paths[i])
 
 
 if __name__ == "__main__":

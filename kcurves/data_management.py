@@ -28,13 +28,12 @@ def load_data_set(cfg_path, verbose = True):
                                       download = False)
 
 
-    elif cfg_file["data"]["data_set"] == "synthetic":
+    elif cfg_file["data"]["data_set"] == "synthetic_functions":
 
-        # TODO: Chage code to have proper names for X_train, Y_train, X_test, Y_test
-        X_train = np.load(cfg_file["data"]["train"]+"X.npy")
-        Y_train = np.load(cfg_file["data"]["train"]+"Y.npy")
-        X_test =  np.load(cfg_file["data"]["test"]+"X.npy")
-        Y_test = np.load(cfg_file["data"]["test"]+ "Y.npy")
+        X_train = np.load(cfg_file["data"]["train"]+"X_train.npy")
+        Y_train = np.load(cfg_file["data"]["train"]+"Y_train.npy")
+        X_test =  np.load(cfg_file["data"]["test"]+"X_test.npy")
+        Y_test = np.load(cfg_file["data"]["test"]+ "Y_test.npy")
 
         train_dataset = SyntheticDataset(data = X_train, labels = Y_train)
         test_dataset = SyntheticDataset(data = X_test, labels = Y_test)

@@ -1,17 +1,15 @@
 #!/bin/bash
-NUM_TESTS=20
-base_path="./configs/synthetic_clusters/synthetic_clusters_"
-base_path_generation="./configs/synthetic_generation_clusters/synthetic_generation_clusters_"
+base_path="./configs/synthetic_$1/synthetic_$1_"
+base_path_generation="./configs/synthetic_$1_generation/synthetic_$1_generation_"
 
-for i in $(seq -w 1 $NUM_TESTS);
+for i in $(seq -w 1 $2);
 do
     cfg_path_generation="${base_path_generation}${i}.yaml"
     cfg_path="${base_path}${i}.yaml"
-
 #    echo $cfg_path
-    if [ $i -le $1 ];
+    if [ $i -le $3 ];
     then
-        case $2 in
+        case $4 in
             -g)
                 echo "Using file: ${cfg_path_generation} to generate data.";
                 python3 kcurves/generate_synthetic.py $cfg_path_generation;
@@ -31,5 +29,4 @@ do
         esac
         echo "------------------------------------------------------";
     fi
-
 done
