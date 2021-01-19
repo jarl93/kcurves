@@ -51,7 +51,7 @@ def L1_regularization(autoencoder, x, lambda_):
 
     return loss_L1
 
-def KL_loss(dist, alpha_, gamma_):
+def KL_loss(dist, alpha_, gamma_, p_ref):
     """
 
     :param h:
@@ -61,7 +61,6 @@ def KL_loss(dist, alpha_, gamma_):
     The implementaion can seem freaky, but it's because the implementation of the function torch.nn.KLDivLoss.
     Check out the documentation in https://pytorch.org/docs/stable/generated/torch.nn.KLDivLoss.html
     """
-    p_ref = torch.tensor([0.5, 0.5])
     q_softmax = F.softmax(-1.0 * alpha_ * dist, dim=1)
     q_mean = torch.mean(q_softmax, dim = 0)
     loss_KL = torch.nn.KLDivLoss ()
@@ -86,8 +85,7 @@ def check_non_neagtive_loss(loss, name):
     else:
         return loss
 
-# def loss_function(x, x_reconstructed, h, h1, h2, centers, alpha_, beta_, gamma_, type_dist, type_loss, phase):
-def loss_function(x, x_reconstructed, h, centers, alpha_, beta_, gamma_, type_dist, type_loss, phase):
+def loss_function(x, x_reconstructed, h, dist0, centers, alpha_, beta_, gamma_, type_dist, type_loss, p_ref):
     # Compute the MSE loss between the input and the reconstruction
     loss_MSE = nn.MSELoss()
     loss_rec = loss_MSE(x, x_reconstructed)
@@ -98,15 +96,13 @@ def loss_function(x, x_reconstructed, h, centers, alpha_, beta_, gamma_, type_di
         # compute the distance matrix between the batch of points and the centers
         dist = pairwise_distances(h, centers)
     elif type_dist == "axes":
-        dist1 = torch.abs(h)
-        if phase == 1:
-            # d1 = -torch.abs(h1)[:, 0] + torch.abs(h1)[:, 1]
-            # d2 = torch.abs(h2)[:, 0] - torch.abs(h2)[:, 1]
-            # dist2 = torch.cat((d1.view(-1, 1), d2.view(-1, 1)), 1)
-            dist2 = torch.abs(h)
-        else:
-            print("Wrong path!")
-            # dist2 = torch.abs(h1)[:, 0] + torch.abs(h2)[:, 1]
+        dist = torch.abs(h)
+        # if phase == 1:
+        #     dist2 = torch.abs(h)
+        # else:
+        #     d1 = -torch.abs(h1)[:, 0] + torch.abs(h1)[:, 1]
+        #     d2 = torch.abs(h2)[:, 0] - torch.abs(h2)[:, 1]
+        #     dist2 = torch.cat((d1.view(-1, 1), d2.view(-1, 1)), 1)
 
     elif type_dist == "angle":
         batch_size = h.shape[0]
@@ -129,21 +125,21 @@ def loss_function(x, x_reconstructed, h, centers, alpha_, beta_, gamma_, type_di
         loss_batch += loss_dist
         return loss_batch, loss_rec, loss_dist
     elif type_loss == "entropy":
-        if phase == 1:
-            dist_entropy = F.softmax(-1*alpha_ * dist2, dim=1) * F.log_softmax(-1*alpha_ * dist2, dim=1)
-            loss_entropy = -1.0 * beta_ * dist_entropy.sum()
-        else:
-            print("Wrong path!")
-            loss_entropy = beta_ * torch.mean(dist2)
-
+        # compute the entropy depending on the phase
+        # if phase == 1:
+        #     dist_entropy = F.softmax(-1*alpha_ * dist2, dim=1) * F.log_softmax(-1*alpha_ * dist2, dim=1)
+        #     loss_entropy = -1.0 * beta_ * dist_entropy.sum()
+        # else:
+        #     dist_entropy = F.softmax(alpha_ * dist2, dim=1) * F.log_softmax(alpha_ * dist2, dim=1)
+        #     loss_entropy = -10 * beta_ * dist_entropy.sum()
+        dist_entropy = F.softmax(-alpha_ * dist, dim=1) * F.log_softmax(-alpha_ * dist, dim=1)
+        loss_entropy = -1.0 * beta_ * dist_entropy.sum()
         loss_entropy = check_non_neagtive_loss(loss_entropy, "loss_entropy")
         loss_batch += loss_entropy
-        loss_KL = KL_loss(dist1, alpha_, gamma_)
+        loss_KL = KL_loss(dist, alpha_, gamma_, p_ref)
         loss_KL = check_non_neagtive_loss(loss_KL, "loss_KL")
         loss_batch += loss_KL
         return loss_batch, loss_rec, loss_entropy, loss_KL
-
-
 
 
 # ---------------------------------------------Frozen code -------------------------------------------------------------

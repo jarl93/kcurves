@@ -1,14 +1,14 @@
-name: "synthetic_identity_both"
+name: "synthetic_functions"
 
 data:
-  data_set: "synthetic"
+  data_set: "synthetic_functions"
   train: "./data/synthetic/train/"
   test: "./data/synthetic/test/"
   num_classes: 2
 
 train:
   batch_size: 128
-  num_epochs: 20
+  num_epochs: 100
 
   # scalar hyperparameters for the regularization terms
   lambda: 0.001 # scalar for reg_L1

@@ -31,6 +31,8 @@ def test(cfg_path, model, data_set, mode_forced, mode, lap = "0"):
     num_classes = cfg_file["data"]["num_classes"]
     show_images = cfg_file["tracing"]["show_images"]
     images_to_show = cfg_file["tracing"]["images_to_show"]
+    p_ref_opt = cfg_file["train"]["p_ref"]
+    dist_classes = cfg_file["data"]["dist_classes"]
 
    # get the hyperparameters of the config file
     dic_hyperparameters = get_hyperparameters(cfg_path)
@@ -95,36 +97,37 @@ def test(cfg_path, model, data_set, mode_forced, mode, lap = "0"):
         x_numpy = x.detach().numpy()
 
         # Encode the data to see how the result looks
-        # h, h1, h2 = model.encoder(x)
-        h = model.encoder(x)
+        #h, _, h1, h2 = model.encoder(x)
 
-        # Get the reconstrunction from the autoencoder
+        h = model.encoder(x)
+        h1 = h
+        h2 = h
+
+        # Get the reconstruction from the autoencoder
+
         x_reconstructed = model.decoder(h)
 
         x_reconstructed_numpy = x_reconstructed.detach().numpy()
 
         h_numpy = h.detach().numpy()
-        # h1_numpy = h1.detach().numpy()
-        # h2_numpy = h2.detach().numpy()
+        h1_numpy = h1.detach().numpy()
+        h2_numpy = h2.detach().numpy()
 
         if batch_idx == 0:
             X_input = x_numpy
             X_reconstructed = x_reconstructed_numpy
             H_2D = h_numpy
-            # H1_2D = h1_numpy
-            # H2_2D = h2_numpy
+            H1_2D = h1_numpy
+            H2_2D = h2_numpy
             labels = y
         else:
             X_input = np.vstack((X_input, x_numpy))
             X_reconstructed = np.vstack((X_reconstructed, x_reconstructed_numpy))
             H_2D = np.vstack((H_2D, h_numpy))
-            # H1_2D = np.vstack((H1_2D, h1_numpy))
-            # H2_2D = np.vstack((H2_2D, h2_numpy))
+            H1_2D = np.vstack((H1_2D, h1_numpy))
+            H2_2D = np.vstack((H2_2D, h2_numpy))
             labels = np.hstack((labels, y))
 
-        # loss_MSE = nn.MSELoss()
-        # mse = loss_MSE(x, x_reconstructed)
-        # print("MSE: ", mse.item())
 
         if cfg_file["data"]["data_set"] == "mnist":
             if show_images and batch_idx < images_to_show:
@@ -135,7 +138,12 @@ def test(cfg_path, model, data_set, mode_forced, mode, lap = "0"):
     # get the softmax to the distance to the axes
     H_2D_softmax = get_softmax(np.absolute(H_2D))
 
-    print("H_2D shape: ", H_2D.shape)
+    # compute the accuracy
+    prediction = np.argmax(H_2D_softmax, axis = 1)
+    accuracy_1 = np.sum( prediction == labels)/len(labels)
+    accuracy_2 = np.sum( prediction != labels)/len(labels)
+    accuracy = ["accuracy_1 = "+str(accuracy_1), "accuracy_2 = " +str(accuracy_2)]
+
 
     if show_images:
         writer.add_figure('originals vs reconstructed', imshow(list_images))
@@ -152,27 +160,24 @@ def test(cfg_path, model, data_set, mode_forced, mode, lap = "0"):
         list_vars = [x_i, y_i, z_i_ent, z_i_dist]
 
         # make the list for the outputs (inputs) of the auto-encoder
-        # list_X = [X_input, X_reconstructed, H_2D, H_2D_softmax, H1_2D, H2_2D]
-
-        list_X = [X_input, X_reconstructed, H_2D, H_2D_softmax]
+        list_X = [X_input, X_reconstructed, H_2D, H_2D_softmax, H1_2D, H2_2D]
 
         # titles = ["Input", "Reconstruction", "Latent Space", "Softmax Latent Space",
         #           "Objective entropy in [{}, {}] x [{}, {}]".format(a_x, b_x, a_y, b_y),
         #           "Objective distance in [{}, {}] x [{}, {}]".format(a_x, b_x, a_y, b_y)]
 
-        # titles = ["Input", "Reconstruction", "Latent Space", "Softmax Latent Space", "Transformation 1",
-        #           "Transformation 2"]
-        titles = ["Input", "Reconstruction", "Latent Space", "Softmax Latent Space"]
+        titles = ["Input(" + dist_classes + ")", "Reconstruction", "Latent Space",
+                  "Softmax LS, p_ref = " + str(p_ref_opt), "Transformation 1", "Transformation 2"]
 
         writer.add_figure('01 Visualization of Encoder outputs (or inputs)',
                           plot_2D_visualization_clusters(list_X = list_X, list_vars = list_vars , labels = labels,
                                                          titles = titles, num_classes=num_classes,
-                                                         levels_contour = levels_contour))
+                                                         levels_contour = levels_contour, accuracy = accuracy))
 
         writer.add_figure('01 Visualization of Encoder outputs (or inputs)',
                           plot_2D_visualization_clusters(list_X=list_X, list_vars = list_vars, labels=labels,
                                                          titles=titles, num_classes=num_classes,
-                                                         levels_contour=levels_contour))
+                                                         levels_contour=levels_contour, accuracy = accuracy))
 
         # TODO: Consider to put the following code in a different module
         # code for visualization of clustering in latent space

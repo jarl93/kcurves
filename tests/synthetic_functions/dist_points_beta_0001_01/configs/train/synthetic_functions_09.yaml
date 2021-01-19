@@ -1,0 +1,51 @@
+name: synthetic_functions_09
+data:
+  data_set: synthetic_functions
+  train: ./data/synthetic_functions/train/09/
+  test: ./data/synthetic_functions/test/09/
+  num_classes: 2
+  dist_classes: 50/50
+train:
+  batch_size: 128
+  num_epochs: 200
+  alpha: 10
+  beta_type: fixed
+  beta_min: 0.0001
+  beta_max: 0.001
+  beta_fixed: 0.1
+  gamma: 0
+  p_ref: random
+  lambda: 0.001
+  type_loss: dist
+  type_dist: points
+  lr: 0.002
+  batch_frequency_loss: 1
+  evolution : True
+  epochs_frequency_evolution : 20
+  save_evolution : True
+test:
+  mode_forced: test
+  batch_size: 128
+model:
+  path: ./models/synthetic_functions/09/
+  evolution_path: ./models/synthetic_functions_evolution/09/
+  name: model_functions_09
+  save: True
+  device: cpu
+  encoder:
+    layer_sizes: [2, 2]
+    last_nn_layer: Identity
+  decoder:
+    layer_sizes: [2, 2]
+    last_nn_layer: Identity
+  input_dim: 2
+  latent_dim: 2
+tracing:
+  show_images: False
+  images_to_show: 10
+  visualize_latent: True
+  x_interval: [-1, 1]
+  y_interval: [-1, 1]
+  delta_interval: 0.01
+  levels_contour: 20
+  batch_frequency: 10

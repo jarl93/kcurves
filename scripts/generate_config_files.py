@@ -63,20 +63,23 @@ def write_config_training(path_config_files, list_names, list_train_paths, list_
     beta_type_list = NUM_CASES_FIX*["fixed"]
     beta_min_list = NUM_CASES_FIX*[0.0001]
     beta_max_list = NUM_CASES_FIX*[0.001]
-    beta_fixed_list = NUM_CASES_FIX*[0.001]
+    beta_fixed_list = [0.001, 0.01, 0.1]
 
+
+    p_ref_list = [[0.5, 0.5], [0.5, 0.5], "random"]
+    dist_classes = "50/50"
 
     gamma_list = NUM_CASES_FIX*[10]
 
     type_dist = "axes"
-    # type_dist = "points"
+    #type_dist = "points"
     # type_dist = "angle"
 
     type_loss = "entropy"
-    # type_loss = "dist"
+    #type_loss = "dist"
 
     lambda_ = 0.001
-    lr = 0.001
+    lr = 0.002
     batch_frequency_loss = 1
     epochs_frequency_evolution = 20
     save_evolution = True
@@ -106,6 +109,7 @@ def write_config_training(path_config_files, list_names, list_train_paths, list_
         beta_type = beta_type_list[idx]
         beta_fixed = beta_fixed_list[idx]
         gamma_ = gamma_list[idx]
+        p_ref = p_ref_list[idx]
         alpha_ = alpha_list[idx]
         path = path_config_files + list_names[i] + ".yaml"
         f = open(path, "w")
@@ -116,6 +120,8 @@ def write_config_training(path_config_files, list_names, list_train_paths, list_
         f.write("  train: " + str(list_train_paths[i]) + "\n")
         f.write("  test: " + str(list_test_paths[i]) + "\n")
         f.write("  num_classes: " + str(num_classes) + "\n")
+        f.write("  dist_classes: " + str(dist_classes) + "\n")
+
 
         f.write("train:\n")
         f.write("  batch_size: " + str(batch_size) + "\n")
@@ -126,6 +132,7 @@ def write_config_training(path_config_files, list_names, list_train_paths, list_
         f.write("  beta_max: " + str(beta_max) + "\n")
         f.write("  beta_fixed: "+ str(beta_fixed) + "\n")
         f.write("  gamma: " + str(gamma_) + "\n")
+        f.write("  p_ref: " + str(p_ref) + "\n")
         f.write("  lambda: " + str(lambda_) + "\n")
         f.write("  type_loss: " + str(type_loss) + "\n")
         f.write("  type_dist: " + str(type_dist) + "\n")
@@ -258,13 +265,16 @@ def write_config_synthetic_functions_generation(path_config_generation_files, li
     train_num_samples = [3000, 3000]
     test_num_samples = [500, 500]
 
+
     # # class distribution: 70-30
     # train_num_samples = [4200, 1800]
     # test_num_samples = [700, 300]
 
+
     # # class distribution: 90-10
     # train_num_samples = [5400, 600]
     # test_num_samples = [900, 100]
+
 
 
     scale = True
@@ -284,15 +294,15 @@ def write_config_synthetic_functions_generation(path_config_generation_files, li
         # code to generate different cases
         if i <= TESTS_PER_CASE:
             # enforce a separation of at least d_shift units between the two functions
-            shift_1 = np.random.randint(-50, 50)
-            shift_2 = np.random.randint(-50, 50)
-            while abs(shift_1 - shift_2) < d_shift:
-                shift_1 = np.random.randint(-50, 50)
-                shift_2 = np.random.randint(-50, 50)
+            # shift_1 = np.random.randint(-50, 50)
+            # shift_2 = np.random.randint(-50, 50)
+            # while abs(shift_1 - shift_2) < d_shift:
+            #     shift_1 = np.random.randint(-50, 50)
+            #     shift_2 = np.random.randint(-50, 50)
 
             # fixed case
-            # shift_1 = -40
-            # shift_2 = 10
+            shift_1 = -40
+            shift_2 = 10
 
             shift = [shift_1, shift_2]
             shift_list.append(shift)

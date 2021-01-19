@@ -3,12 +3,13 @@
 import torch
 import torch.optim as optim
 import os
-from helpers import load_config, create_writer, add_zeros
+from helpers import load_config, create_writer, add_zeros, freeze_module, unfreeze_module
 from loss import loss_function
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 from testing import test
+import numpy as np
 
 def train(cfg_path, model, data_set, verbose = True):
     """
@@ -31,6 +32,7 @@ def train(cfg_path, model, data_set, verbose = True):
     epochs_frequency_evolution = cfg_file["train"]["epochs_frequency_evolution"]
     save_evolution = cfg_file["train"]["save_evolution"]
     batch_size = cfg_file["train"]["batch_size"]
+    p_ref_opt = cfg_file["train"]["p_ref"]
 
     # make the generator train_loader for the train_dataset
     train_dataset, _ = data_set
@@ -88,7 +90,6 @@ def train(cfg_path, model, data_set, verbose = True):
     lap = 1
     phase = 1
     for epoch in range(num_epochs):
-
         # test the current model
         # epoch = 0 ==> initialization of the model
         if evolution and epoch % epochs_frequency_evolution == 0:
@@ -102,8 +103,15 @@ def train(cfg_path, model, data_set, verbose = True):
             lap += 1
 
         train_loss = 0
-        for batch_idx, data_batch in enumerate(train_loader):
 
+        if p_ref_opt == "random":
+            p_ref_1 = np.random.rand()
+            p_ref_2 = 1 - p_ref_1
+            p_ref = torch.tensor([p_ref_1, p_ref_2])
+        else:
+            p_ref = torch.tensor(p_ref_opt)
+
+        for batch_idx, data_batch in enumerate(train_loader):
             # get the data and labels from the generator
             x, y = data_batch
 
@@ -117,19 +125,20 @@ def train(cfg_path, model, data_set, verbose = True):
             optimizer.zero_grad()
 
             # Get the latent vector
-            # h, h1, h2 = model.encoder(x)
+            #h, dist, h1, h2 = model.encoder(x)
+
             h = model.encoder(x)
+            dist = 0
+            h1 = 0
+            h2 = 0
             # Get the reconstruction from the auto-encoder
             x_reconstructed = model.decoder(h)
 
             # Compute the loss of the batch
-            # loss = loss_function(x, x_reconstructed, h, model, scalar_hyperparameters, regularization_types)
-            if type_loss == "dist":
-                # loss, loss_rec, loss_dist = loss_function(x, x_reconstructed, h, h1, h2, centers, alpha_, beta_,
-                #                                           gamma_, type_dist, type_loss)
 
-                loss, loss_rec, loss_dist = loss_function(x, x_reconstructed, h, centers, alpha_, beta_,
-                                                          gamma_, type_dist, type_loss)
+            if type_loss == "dist":
+                loss, loss_rec, loss_dist = loss_function(x, x_reconstructed, h, dist, centers, alpha_, beta_,
+                                                        gamma_, type_dist, type_loss, p_ref)
 
                 if batch_idx % batch_frequency_loss == 0:
                     writer.add_scalar('loss_training', loss.item(), epoch * N + batch_idx)
@@ -137,10 +146,9 @@ def train(cfg_path, model, data_set, verbose = True):
                     writer.add_scalar('loss_dist', loss_dist.item(), epoch * N + batch_idx)
 
             elif type_loss == "entropy":
-                # loss, loss_rec, loss_ent, loss_KL = loss_function(x, x_reconstructed, h, h1, h2, centers, alpha_, beta_,
-                #                                                   gamma_, type_dist, type_loss, phase)
-                loss, loss_rec, loss_ent, loss_KL = loss_function(x, x_reconstructed, h, centers, alpha_, beta_,
-                                                                  gamma_, type_dist, type_loss, phase)
+                loss, loss_rec, loss_ent, loss_KL = loss_function(x, x_reconstructed, h, dist, centers, alpha_, beta_,
+                                                                  gamma_, type_dist, type_loss, p_ref)
+
                 if batch_idx % batch_frequency_loss == 0:
                     writer.add_scalar('loss_training', loss.item(), epoch * N + batch_idx)
                     writer.add_scalar('loss_rec', loss_rec.item(), epoch * N + batch_idx)
@@ -155,12 +163,8 @@ def train(cfg_path, model, data_set, verbose = True):
                 else:
                     beta_ -= beta_delta
             elif beta_type == "fixed":
-                if epoch > num_epochs//2:
-                    beta_ = beta_fixed
-                    phase = 1
-                else:
-                    phase = 1
-                    beta_ = beta_fixed
+                beta_ = beta_fixed
+
 
             loss.backward()
             train_loss += loss.item()
@@ -172,6 +176,7 @@ def train(cfg_path, model, data_set, verbose = True):
                     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                         epoch, batch_idx * batch_size, N,
                                100. * batch_idx / num_batches, loss.item()))
+
 
 
 

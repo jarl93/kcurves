@@ -20,13 +20,15 @@ def init_model(cfg_path, verbose=False):
     last_nn_layer_encoder = cfg_file["model"]["encoder"]["last_nn_layer"]
     last_nn_layer_decoder = cfg_file["model"]["decoder"]["last_nn_layer"]
     device = cfg_file["model"]["device"]
+    alpha_ = cfg_file["train"]["alpha"]
 
     if verbose:
         print("Initialization of the model...")
     # Define the model as an autoencoder
     model = AE(input_dim=input_dim, encoder_layer_sizes = encoder_layer_sizes,
                decoder_layer_sizes = decoder_layer_sizes, latent_dim = latent_dim,
-               last_nn_layer_encoder = last_nn_layer_encoder, last_nn_layer_decoder = last_nn_layer_decoder)
+               last_nn_layer_encoder = last_nn_layer_encoder, last_nn_layer_decoder = last_nn_layer_decoder,
+               alpha_ = alpha_)
 
     model = model.to(device)
 

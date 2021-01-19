@@ -72,7 +72,7 @@ def plot_X2D_visualization(X, labels, title, num_classes, cluster_centers=None):
 
     return fig
 
-def plot_2D_visualization_clusters(list_X, list_vars, labels, titles, num_classes, levels_contour):
+def plot_2D_visualization_clusters(list_X, list_vars, labels, titles, num_classes, levels_contour, accuracy):
     """
     Visualizes outputs (inputs) of the auto-encoder.
     :param list_X: List [X_input, X_reconstructed, H, softmax(H)], where:
@@ -108,6 +108,9 @@ def plot_2D_visualization_clusters(list_X, list_vars, labels, titles, num_classe
             idx = np.where(labels == j)
             axs[cx, cy].scatter(X[idx, 0], X[idx, 1], cmap='viridis')
             axs[cx, cy].set_title(title)
+        if i == 3:
+            axs[cx, cy].legend(accuracy)
+
 
 
     # -----------------------------Frozen code-------------------------------
@@ -417,3 +420,24 @@ def add_zeros (n, lim):
     num += str(n)
 
     return num
+
+def freeze_module (module):
+    """
+    :param module:
+    :return:
+    """
+    for param in module.parameters():
+        param.requires_grad = False
+
+    return None
+
+
+def unfreeze_module(module):
+    """
+    :param module:
+    :return:
+    """
+    for param in module.parameters():
+        param.requires_grad = True
+
+    return None

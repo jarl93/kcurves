@@ -10,6 +10,7 @@ clusters:
 #  std_centers: [10,10]
   dim: 2
 data:
+
   save: True
   plot: True
   normalize: False
