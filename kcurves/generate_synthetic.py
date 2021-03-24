@@ -2,13 +2,141 @@ import os
 import argparse
 from helpers import transform_low_to_high, load_config, sigmoid, plot_functions, plot_X2D_visualization, \
     plot_2D_visualization_generation_functions
-from data_management import normalize_data, scale_data
+from data_management import normalize_data
 import numpy as np
+from sklearn.decomposition import PCA
 from torch.utils.tensorboard import SummaryWriter
 from functions import FunctionSin
 from datetime import datetime
 from clustering import k_means
 from sklearn.datasets import make_blobs
+from constants import DATA_SET # this constant should match with the one in scripts.constants
+
+def generate_list_W_and_F(cfg_file):
+
+    # define and store the linear transformations
+    list_dimensions = []
+    for dimension in cfg_file["transformation"]["list_dimensions"]:
+        list_dimensions.append(tuple(dimension))
+
+    num_transformations = len(list_dimensions)
+    list_W = []
+
+    for i in range(num_transformations):
+        W = np.random.normal(0, 1, size=list_dimensions[i])
+        list_W.append(W)
+
+    # TODO: add more non-linear functions if required
+    if cfg_file["transformation"]["non_linear"] == "sigmoid":
+        F_non_linear = sigmoid
+
+    return list_W, F_non_linear
+
+def generate_synthetic_lines(cfg_path, verbose = True):
+
+    # laod config file
+    cfg_file = load_config(cfg_path)
+
+    # create a path for the log directory
+    path_log_dir = cfg_file["data"]["plots"]["path"] + datetime.now().strftime("%d.%m.%Y-%H:%M:%S")
+
+    if not os.path.isdir(path_log_dir):
+        os.mkdir(path_log_dir)
+
+    log_tensorboard = path_log_dir + "/tensorboard/"
+
+    writer = SummaryWriter(log_dir=log_tensorboard)
+
+    n_samples_train = cfg_file["data"]["train"]["num_samples"]
+    rotation = cfg_file["data"]["train"]["rotation"]
+
+    if verbose:
+        print("Generating lines...")
+
+    separation = 5
+    d = separation * np.array([[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 0], [0, 1], [1, -1], [1, 0], [1, 1]])
+    #theta_list = [1.434, 4.302, 5.404, 5.657, 0.463, 5.293, 0.64, 0.238, 3.073] # rotation 1
+    theta_list = [2.193, 5.189, 4.584, 3.426, 5.819, 0.229, 4.085, 1.597, 1.202] # rotation 2
+    # distribution for the clusters
+    # p_dist = [0.03, 0.03, 0.03, 0.03, 0.04, 0.04, 0.2, 0.2, 0.4] # heavy imbalance
+    # p_dist = [0.2, 0.1, 0.1, 0.05, 0.05, 0.1, 0.1, 0.1, 0.2]  # soft imbalance
+    p_dist = 9 *[1/9] # uniform distribution
+    X_train = None
+    Y_train = None
+    for i in range(9):
+
+        rng = np.random.RandomState(2) # regular shapes
+        # rng = np.random.RandomState(i+8) # different shapes
+        n_samples_i = int(p_dist[i] * n_samples_train )
+        X_pre = np.dot(rng.rand(2, 2), rng.randn(2, n_samples_i)).T
+        if rotation: # with rotation
+            # matrix to rotate
+            r = np.zeros((2, 2))
+            theta = theta_list[i]
+            r[0, 0] = np.cos(theta)
+            r[0, 1] = np.sin(theta)
+            r[1, 0] = -1 * np.sin(theta)
+            r[1, 1] = np.cos(theta)
+            X = np.dot(X_pre, r) + d[i, :]
+        else: # without rotation
+            X = X_pre + d[i,:]
+
+        # compute the centers by means of PCA
+        pca = PCA(n_components=2)
+        pca.fit(X)
+        centers = pca.mean_
+
+        # compute the labels
+        Y = i * np.ones(X.shape[0])
+        if i == 0:
+            X_train = X
+            Y_train = Y
+            centers_train = centers
+        else:
+            X_train = np.vstack((X_train, X))
+            Y_train = np.hstack((Y_train, Y))
+            centers_train = np.vstack((centers_train, centers))
+
+    if cfg_file["data"]["transformation"]:
+        if verbose:
+            print("Creating non-linear transformation...")
+
+        # transformations to bring lower-dimensional data to a higher-dimensional space
+        list_W, F_non_linear = generate_list_W_and_F(cfg_file)
+
+        if verbose:
+            print("Applying transformation to the data...")
+        X_train = transform_low_to_high(X_train, F_non_linear, list_W)
+        centers_train = transform_low_to_high(centers_train, F_non_linear, list_W)
+
+    if cfg_file["data"]["normalize"]:
+        if verbose:
+            print("Normalizing data...")
+        X_train, centers_train = normalize_data(X_train, centers_train)
+
+
+    X_test = X_train
+    Y_test = Y_train
+    centers_test = centers_train
+
+    if cfg_file["data"]["save"]:
+        if verbose:
+            print("Saving data...")
+        # save the training data
+        np.save(cfg_file["data"]["train"]["path"] + "X_train", X_train)
+        np.save(cfg_file["data"]["train"]["path"] + "Y_train", Y_train)
+        np.save(cfg_file["data"]["train"]["path"] + "centers_train", centers_train)
+        # save the test data
+        np.save(cfg_file["data"]["test"]["path"] + "X_test", X_test)
+        np.save(cfg_file["data"]["test"]["path"] + "Y_test", Y_test)
+        np.save(cfg_file["data"]["test"]["path"] + "centers_test", centers_test)
+
+
+    if verbose:
+        print("Data generation completed!")
+
+    return X_train, Y_train, X_test, Y_test
+
 
 def generate_synthetic_clusters(cfg_path, verbose = True):
     # laod config file
@@ -68,14 +196,8 @@ def generate_synthetic_clusters(cfg_path, verbose = True):
     if cfg_file["data"]["normalize"]:
         if verbose:
             print("Normalizing data...")
-        X_train = normalize_data(X_train_raw)
-        X_test = normalize_data(X_test_raw)
-    elif cfg_file["data"]["scale"]:
-        if verbose:
-            print("Scaling data...")
-        scale_factor = cfg_file["data"]["scale_factor"]
-        X_train = scale_data(X_train_raw, scale_factor)
-        X_test = scale_data(X_test_raw, scale_factor)
+        X_train, centers_train = normalize_data(X_train_raw, centers_train)
+        X_test, centers_test = normalize_data(X_test_raw, centers_test)
     else:
         X_train = X_train_raw
         X_test = X_test_raw
@@ -88,10 +210,12 @@ def generate_synthetic_clusters(cfg_path, verbose = True):
         np.save(cfg_file["data"]["train"]["path"] + "X_train_raw", X_train_raw)
         np.save(cfg_file["data"]["train"]["path"] + "X_train", X_train)
         np.save(cfg_file["data"]["train"]["path"] + "Y_train", Y_train)
+        np.save(cfg_file["data"]["train"]["path"] + "centers_train", centers_train)
         # save the test data
         np.save(cfg_file["data"]["test"]["path"] + "X_test_raw", X_test_raw)
         np.save(cfg_file["data"]["test"]["path"] + "X_test", X_test)
         np.save(cfg_file["data"]["test"]["path"] + "Y_test", Y_test)
+        np.save(cfg_file["data"]["test"]["path"] + "centers_test", centers_test)
 
     if cfg_file["data"]["plot"]:
         if verbose:
@@ -169,6 +293,14 @@ def generate_synthetic_functions(cfg_path, verbose = True):
     F2_test = FunctionSin(cfg_file["F2"]["amp"], cfg_file["F2"]["frec"], interval_F2, cfg_file["F2"]["shift"],
                           cfg_file["F2"]["char_to_plot"], cfg_file["F2"]["color_to_plot"])
 
+    # compute the centers for the functions
+    cx_F1 = (interval_F1[0]+ interval_F1[1])/2
+    cy_F1 = cfg_file["F1"]["shift"]
+    cx_F2 = (interval_F2[0] + interval_F2[1]) / 2
+    cy_F2 = cfg_file["F2"]["shift"]
+    centers_train = np.array( [[cx_F1, cy_F1], [cx_F2, cy_F2]])
+    centers_test = np.array( [[cx_F1, cy_F1], [cx_F2, cy_F2]])
+
 
     if verbose:
         print("Generating data...")
@@ -195,22 +327,7 @@ def generate_synthetic_functions(cfg_path, verbose = True):
             print("Creating non-linear transformation...")
 
         # transformations to bring lower-dimensional data to a higher-dimensional space
-
-        # define and store the linear transformations
-        list_dimensions = []
-        for dimension in cfg_file["transformation"]["list_dimensions"]:
-            list_dimensions.append(tuple(dimension))
-
-        num_transformations = len(list_dimensions)
-        list_W = []
-
-        for i in range(num_transformations):
-            W = np.random.normal(0, 1, size=list_dimensions[i])
-            list_W.append(W)
-
-        # TODO: add more non-linear functions if required
-        if cfg_file["transformation"]["non_linear"] == "sigmoid":
-            F_non_linear = sigmoid
+        list_W, F_non_linear = generate_list_W_and_F(cfg_file)
 
         if verbose:
             print("Applying transformation to the data...")
@@ -220,17 +337,11 @@ def generate_synthetic_functions(cfg_path, verbose = True):
         X_train = X_train_raw
         X_test = X_test_raw
 
-    if cfg_file["data"]["scale"]:
-        if verbose:
-            print("Scaling data...")
-        scale_factor = cfg_file["data"]["scale_factor"]
-        X_train = scale_data(X_train, scale_factor)
-        X_test = scale_data(X_test, scale_factor)
     if cfg_file["data"]["normalize"]:
         if verbose:
             print("Normalizing data...")
-        X_train = normalize_data(X_train, verbose = True)
-        X_test = normalize_data(X_test, verbose = True)
+        X_train, centers_train = normalize_data(X_train, centers_train, verbose = True)
+        X_test, centers_test = normalize_data(X_test, centers_test, verbose = True)
 
     # labels for training data
     labels_train0 = np.zeros(F1_train.vec.shape[0])
@@ -248,17 +359,20 @@ def generate_synthetic_functions(cfg_path, verbose = True):
         np.save(cfg_file["data"]["train"]["path"] + "X_train_raw", X_train_raw)
         np.save(cfg_file["data"]["train"]["path"] + "X_train", X_train)
         np.save(cfg_file["data"]["train"]["path"] + "Y_train", Y_train)
+        np.save(cfg_file["data"]["train"]["path"] + "centers_train", centers_train)
         np.save(cfg_file["data"]["test"]["path"] + "X_test_raw", X_test_raw)
         np.save(cfg_file["data"]["test"]["path"] + "X_test", X_test)
         np.save(cfg_file["data"]["test"]["path"] + "Y_test", Y_test)
+        np.save(cfg_file["data"]["test"]["path"] + "centers_test", centers_test)
+
 
     # run k-means on the training data
     # centers_train_raw, labels_train_raw = k_means(X_train_raw, n_clusters = len(list_F_train))
-    centers_train, labels_kmeans_train = k_means(X_train, n_clusters = len(list_F_train))
+    centers_train_kmeans, labels_kmeans_train = k_means(X_train, centers_init = None, n_clusters = len(list_F_train))
 
     # run k-means on the test data
     # centers_test_raw, labels_test_raw = k_means(X_test_raw, n_clusters = len(list_F_test))
-    centers_test, labels_kmeans_test = k_means(X_test, n_clusters=len(list_F_test))
+    centers_test_kmeans, labels_kmeans_test = k_means(X_test, centers_init = None, n_clusters=len(list_F_test))
 
     if cfg_file["data"]["plot"]:
         if verbose:
@@ -271,7 +385,8 @@ def generate_synthetic_functions(cfg_path, verbose = True):
                                                                      X = X_train, labels = Y_train,
                                                                      num_classes = num_classes,
                                                                      labels_kmeans = labels_kmeans_train,
-                                                                     cluster_centers = centers_train, titles = titles))
+                                                                     cluster_centers = centers_train_kmeans,
+                                                                     titles = titles))
 
         # plot the 2D visualization of the test data generated
         titles = ["Functions and noisy data", "Test data", "K-means on test data"]
@@ -280,7 +395,8 @@ def generate_synthetic_functions(cfg_path, verbose = True):
                                                                      X = X_test, labels = Y_test,
                                                                      num_classes = num_classes,
                                                                      labels_kmeans = labels_kmeans_test,
-                                                                     cluster_centers = centers_test, titles = titles))
+                                                                     cluster_centers = centers_test_kmeans,
+                                                                     titles = titles))
     if verbose:
         print("Data generation completed!")
 
@@ -295,7 +411,10 @@ if __name__ == "__main__":
     args = ap.parse_args()
 
     # generate synthetic data with sin waves
-    generate_synthetic_functions(cfg_path = args.config_path)
-
+    if DATA_SET == "synthetic_functions":
+        generate_synthetic_functions(cfg_path = args.config_path)
+    elif DATA_SET == "synthetic_clusters":
     # generate synthetic clusters (isotropic Gaussian blobs)
-    # generate_synthetic_clusters(cfg_path = args.config_path)
+        generate_synthetic_clusters(cfg_path = args.config_path)
+    elif DATA_SET == "synthetic_lines":
+        generate_synthetic_lines(cfg_path = args.config_path)

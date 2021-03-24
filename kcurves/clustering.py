@@ -7,7 +7,7 @@ from sklearn.metrics import mean_squared_error
 from helpers import plot_X2D_visualization
 
 
-def k_means(X, n_clusters, verbose=True, plot = False):
+def k_means(X, centers_init, n_clusters, verbose = False, plot = False):
     """
     Runs k-means given the data (numpy array) and the number of clusters to consider.
     Arguments:
@@ -19,7 +19,10 @@ def k_means(X, n_clusters, verbose=True, plot = False):
         centers: centroids of the n_clusters clusters.
         labels: labels of the data as a result of k-means.
     """
-    kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(X)
+    if centers_init is None:
+        kmeans = KMeans(n_clusters=n_clusters, init='random').fit(X)
+    else:
+        kmeans = KMeans(n_clusters=n_clusters, init = centers_init).fit(X)
     labels = kmeans.predict(X)
     centers = kmeans.cluster_centers_
     if verbose:

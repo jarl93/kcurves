@@ -1,13 +1,15 @@
 """
 Constants
 """
-NUM_TESTS = 12
-TESTS_PER_CASE = 4
-DATA_SET = "synthetic_functions"
+NUM_TESTS = 10
+TESTS_PER_CASE = 1
+DATA_SET = "synthetic_lines"
+#DATA_SET = "synthetic_functions"
 # DATA_SET = "synthetic_clusters"
 NUM_FUNCTIONS = 2
 
-FILLER = "functions"
+FILLER = "lines"
+# FILLER = "functions"
 # FILLER = "clusters"
 
 

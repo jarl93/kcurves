@@ -43,13 +43,16 @@ def write_config_training(path_config_files, list_names, list_train_paths, list_
 
     # train:
     # also equal to number of classes
-    num_classes = 2
+    num_classes = 9
     batch_size = 128
     num_epochs = 200
 
-    NUM_CASES_FIX = 12
+    epochs_warmup = 40
 
-    alpha_list = NUM_CASES_FIX*[10]
+    NUM_CASES_FIX = 10
+
+    alpha_list = NUM_CASES_FIX*[0.1]
+    annealing_frequency_change = 5
 
     # beta_type = "fixed"
     # beta_fixed = 0.001
@@ -60,26 +63,41 @@ def write_config_training(path_config_files, list_names, list_train_paths, list_
     # beta_min = 0.0001
     # beta_max = 0.001
 
-    beta_type_list = NUM_CASES_FIX*["fixed"]
-    beta_min_list = NUM_CASES_FIX*[0.0001]
-    beta_max_list = NUM_CASES_FIX*[0.001]
-    beta_fixed_list = [0.001, 0.01, 0.1]
+    beta_type_list = NUM_CASES_FIX * ["fixed"]
+    beta_list =  NUM_CASES_FIX//2 * [0.1, 1]
 
 
-    p_ref_list = [[0.5, 0.5], [0.5, 0.5], "random"]
+    #p_ref_list = [[0.5, 0.5], [0.5, 0.5], "random"]
     dist_classes = "50/50"
 
-    gamma_list = NUM_CASES_FIX*[10]
+    # gamma_list = [0.01, 0.05, 0.1, 1, 5, 10, 0.01, 0.05, 0.1, 1, 5, 10]
+    # gamma_type_list = ["fixed", "fixed", "fixed", "decay", "decay", "decay", "fixed", "fixed", "fixed", "decay",
+    #                     "decay", "decay"]
 
-    type_dist = "axes"
-    #type_dist = "points"
-    # type_dist = "angle"
 
-    type_loss = "entropy"
+    gamma_list = [0, 0, 0.001, 0.001, 0.01, 0.01, 0.1, 0.1, 1, 1]
+    gamma_type_list = NUM_CASES_FIX * ["fixed"]
+
+
+    # TODO: Change to type_rep
+    # type_dist = "axes"
+    # type_dist = "points"
+    type_dist = "segments"
+    max_length_start = 0.5
+    #type_loss = "entropy"
     #type_loss = "dist"
+    type_loss = "log_dist"
 
     lambda_ = 0.001
-    lr = 0.002
+    # centers_init_type_list = ["max_length_random", "max_length_random", "max_length_random",
+    #                           "PCA_furthest", "PCA_furthest", "PCA_furthest", "PCA_furthest",
+    #                           "knearest_furthest", "knearest_furthest", "knearest_furthest"]
+
+    centers_init_type_list = NUM_CASES_FIX *  ["PCA_proportional_dist"]
+    # centers_init_type_list = NUM_CASES_FIX * ["forgy"]
+
+    percentage_K_list = NUM_CASES_FIX *  [0.10]
+    lr = 0.001
     batch_frequency_loss = 1
     epochs_frequency_evolution = 20
     save_evolution = True
@@ -90,10 +108,18 @@ def write_config_training(path_config_files, list_names, list_train_paths, list_
 
 
     # model:
-    layer_sizes_encoder = [2, 2]
-    layer_sizes_decoder = [2, 2]
-    input_dim = 2
+    input_dim = 100
     latent_dim = 2
+    layer_sizes_encoder = [input_dim, 50, 10, latent_dim]
+    layer_sizes_decoder = [latent_dim, 10, 50, input_dim]
+    #input_dim = 100
+    #latent_dim = 9
+    #layer_sizes_encoder = [input_dim, 64, 32, latent_dim]
+    #layer_sizes_decoder = [latent_dim, 32, 64, input_dim]
+
+    # layer_sizes_encoder = [2]
+    # layer_sizes_decoder = [2]
+
 
     # tracing:
     x_interval = [-1, 1]
@@ -101,16 +127,18 @@ def write_config_training(path_config_files, list_names, list_train_paths, list_
     delta_interval = 0.01
     levels_contour = 20
     batch_frequency = 10
+    num_points_inter = 11
 
     for i in range(1, NUM_TESTS + 1):
         idx = (i -1) // TESTS_PER_CASE
-        beta_min = beta_min_list[idx]
-        beta_max = beta_max_list[idx]
+        beta_init = beta_list[idx]
         beta_type = beta_type_list[idx]
-        beta_fixed = beta_fixed_list[idx]
-        gamma_ = gamma_list[idx]
-        p_ref = p_ref_list[idx]
-        alpha_ = alpha_list[idx]
+        gamma_init = gamma_list[idx]
+        gamma_type = gamma_type_list[idx]
+        percentage_K = percentage_K_list[idx]
+        centers_init_type = centers_init_type_list[idx]
+        #p_ref = p_ref_list[idx]
+        alpha_init = alpha_list[idx]
         path = path_config_files + list_names[i] + ".yaml"
         f = open(path, "w")
         # write the files
@@ -126,16 +154,20 @@ def write_config_training(path_config_files, list_names, list_train_paths, list_
         f.write("train:\n")
         f.write("  batch_size: " + str(batch_size) + "\n")
         f.write("  num_epochs: " + str(num_epochs) + "\n")
-        f.write("  alpha: " + str(alpha_) + "\n")
+        f.write("  epochs_warmup: " + str(epochs_warmup) + "\n")
+        f.write("  annealing_frequency_change: " + str(annealing_frequency_change) + "\n")
+        f.write("  alpha_init: " + str(alpha_init) + "\n")
         f.write("  beta_type: "+str(beta_type)+ "\n")
-        f.write("  beta_min: " + str(beta_min) + "\n")
-        f.write("  beta_max: " + str(beta_max) + "\n")
-        f.write("  beta_fixed: "+ str(beta_fixed) + "\n")
-        f.write("  gamma: " + str(gamma_) + "\n")
-        f.write("  p_ref: " + str(p_ref) + "\n")
+        f.write("  beta_init: "+ str(beta_init) + "\n")
+        f.write("  gamma_type: " + str(gamma_type) + "\n")
+        f.write("  gamma_init: " + str(gamma_init) + "\n")
+        #f.write("  p_ref: " + str(p_ref) + "\n")
         f.write("  lambda: " + str(lambda_) + "\n")
+        f.write("  centers_init_type: " + str(centers_init_type) + "\n")
+        f.write("  percentage_K: " + str(percentage_K) + "\n")
         f.write("  type_loss: " + str(type_loss) + "\n")
         f.write("  type_dist: " + str(type_dist) + "\n")
+        f.write("  max_length_start: " + str(max_length_start) + "\n")
         f.write("  lr: " + str(lr) + "\n")
         f.write("  batch_frequency_loss: " + str(batch_frequency_loss) + "\n")
         f.write("  evolution : " + str(evolution) + "\n")
@@ -170,6 +202,7 @@ def write_config_training(path_config_files, list_names, list_train_paths, list_
         f.write("  delta_interval: " + str(delta_interval) + "\n")
         f.write("  levels_contour: " + str(levels_contour) + "\n")
         f.write("  batch_frequency: " + str(batch_frequency) + "\n")
+        f.write("  num_points_inter: " + str(num_points_inter) + "\n")
 
 
         f.close()
@@ -195,9 +228,9 @@ def write_config_synthetic_clusters_generation(path_config_generation_files, lis
     dim = 2
     center_box = [-100, 100]
     cluster_std = 5
-    scale_factor = 10
     num_samples_train = 5000
     num_samples_test = 1000
+    normalize = True
     for i in range(1, NUM_TESTS + 1):
         random_state = (i -1) % TESTS_PER_CASE
         path = path_config_generation_files + list_names[i] + ".yaml"
@@ -213,9 +246,7 @@ def write_config_synthetic_clusters_generation(path_config_generation_files, lis
         f.write("data:\n")
         f.write("  save: True\n")
         f.write("  plot: True\n")
-        f.write("  normalize: False\n")
-        f.write("  scale: True\n")
-        f.write("  scale_factor: " + str(scale_factor) + "\n")
+        f.write("  normalize: "+ str(normalize) + "\n")
         f.write("  train:\n")
         f.write("    path: " + list_train_paths[i] + "\n")
         f.write("    num_samples: " + str(num_samples_train) + "\n")
@@ -228,6 +259,56 @@ def write_config_synthetic_clusters_generation(path_config_generation_files, lis
 
     return None
 
+def write_config_synthetic_lines_generation(path_config_generation_files, list_names, list_train_paths,
+                                                list_test_paths, list_plot_paths):
+    """
+    Writes config generation files for the synthetic clusters data set.
+    :param path_config_generation_files:
+    :param list_names:
+    :param list_train_paths:
+    :param list_test_paths:
+    :param list_plot_paths:
+    :return:
+    """
+    # TODO: Consider to make lists for the hyperparameters
+    # TODO: Consider to make variables for the boolean hyperparameters
+    # also equal to number of classes
+    num_samples_train = 5000
+    num_samples_test = 1000
+    normalize = True
+    transformation = True
+    rotation = True
+
+    # non-linear transformation
+    non_linear = "sigmoid"
+    list_dimensions = [[10, 2], [50, 10], [100, 50]]
+    for i in range(1, NUM_TESTS + 1):
+        path = path_config_generation_files + list_names[i] + ".yaml"
+        f = open(path, "w")
+        # write the files
+        f.write("data:\n")
+        f.write("  save: True\n")
+        f.write("  plot: False\n")
+        f.write("  normalize: " + str(normalize) + "\n")
+        f.write("  transformation: " + str(transformation) + "\n")
+        f.write("  train:\n")
+        f.write("    path: " + list_train_paths[i] + "\n")
+        f.write("    num_samples: " + str(num_samples_train) + "\n")
+        f.write("    rotation: " + str(rotation) + "\n")
+        f.write("  test:\n")
+        f.write("    path: " + list_test_paths[i] + "\n")
+        f.write("    num_samples: " + str(num_samples_test) + "\n")
+        f.write("  plots:\n")
+        f.write("    path: " + list_plot_paths[i] + "\n")
+        # define transformation
+        f.write("transformation:\n")
+        f.write("  non_linear: " + str(non_linear) + "\n")
+        f.write("  list_dimensions:\n")
+        for dimension in list_dimensions:
+            f.write("    - " + str(dimension) + "\n")
+        f.close()
+
+    return None
 
 def write_config_synthetic_functions_generation(path_config_generation_files, list_names, list_train_paths,
                                                 list_test_paths, list_plot_paths):
@@ -275,13 +356,10 @@ def write_config_synthetic_functions_generation(path_config_generation_files, li
     # train_num_samples = [5400, 600]
     # test_num_samples = [900, 100]
 
-
-
-    scale = True
-    scale_factor = 10
     normalize = True
     non_linear = "sigmoid"
     list_dimensions = [[10, 2], [50, 10], [100, 50]]
+    transformation = False
 
     shift_list = []
 
@@ -326,10 +404,9 @@ def write_config_synthetic_functions_generation(path_config_generation_files, li
         f.write("data:\n")
         f.write("  save: True\n")
         f.write("  plot: True\n")
-        f.write("  scale: " + str(scale) + "\n")
-        f.write("  scale_factor: " + str(scale_factor) + "\n")
+
         f.write("  normalize: " + str(normalize) + "\n")
-        f.write("  transformation: False\n")
+        f.write("  transformation: " + str(transformation) + "\n")
         f.write("  train:\n")
         f.write("    path: " + list_train_paths[i] + "\n")
         f.write("  test:\n")
@@ -388,8 +465,11 @@ def main():
         if DATA_SET == "synthetic_functions":
             write_config_synthetic_functions_generation(path_config_generation_files, list_names, list_train_paths,
                                                         list_test_paths, list_plot_paths)
-        elif DATA_SET == "synthetic clusters":
+        elif DATA_SET == "synthetic_clusters":
             write_config_synthetic_clusters_generation(path_config_generation_files, list_names, list_train_paths,
+                                                       list_test_paths, list_plot_paths)
+        elif DATA_SET == "synthetic_lines":
+            write_config_synthetic_lines_generation(path_config_generation_files, list_names, list_train_paths,
                                                        list_test_paths, list_plot_paths)
 
 

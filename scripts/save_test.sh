@@ -27,4 +27,3 @@ cp -r "./models/$1/"* "./tests/$1/$2/models/";
 cp -r "./models/$1_evolution/"*  "./tests/$1/$2/evolution"
 cp -r "./configs/$1_generation/"* "./tests/$1/$2/configs/generation";
 cp -r "./configs/$1/"* "./tests/$1/$2/configs/train";
-

@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import sys
-from helpers import  pairwise_distances
+from helpers import  pairwise_distances, pairwise_distances_segments
 
 # As long as PyTorch operations are employed the loss.backward should work
 
@@ -68,7 +68,7 @@ def KL_loss(dist, alpha_, gamma_, p_ref):
 
     return KL_last_layer_loss
 
-def check_non_neagtive_loss(loss, name):
+def check_non_neagtive_loss(loss, name, x, x_reconstructed):
     """
     Checks that a given loss is non-negative.
     :param loss:
@@ -81,65 +81,61 @@ def check_non_neagtive_loss(loss, name):
         raise ValueError(name + " cannot be negative!")
     elif torch.isnan(loss):
         print(name + " = {}".format(loss))
+        print("x = ", x)
+        print("x_rec = ", x_reconstructed)
         raise ValueError(name + " is nan!")
     else:
         return loss
 
-def loss_function(x, x_reconstructed, h, dist0, centers, alpha_, beta_, gamma_, type_dist, type_loss, p_ref):
+def loss_function(model, x, x_reconstructed, h, rep, alpha_, beta_, gamma_, type_dist, type_loss):
     # Compute the MSE loss between the input and the reconstruction
     loss_MSE = nn.MSELoss()
     loss_rec = loss_MSE(x, x_reconstructed)
-    loss_rec = check_non_neagtive_loss(loss_rec, "loss_rec")
-    loss_batch = loss_rec
+    loss_rec = check_non_neagtive_loss(loss_rec, "loss_rec", x, x_reconstructed)
+    loss_batch = torch.zeros_like(loss_rec)
+    loss_batch += loss_rec
 
+    dim = h.shape[1]
     if type_dist == "points":
-        # compute the distance matrix between the batch of points and the centers
-        dist = pairwise_distances(h, centers)
+        # compute the distance matrix between the batch of points and the representatives
+        dist = pairwise_distances(h, rep)
+    elif type_dist == "segments":
+        dist = pairwise_distances_segments(h, rep)
+        diff = rep[:, dim:] - rep[:, :dim]
+        loss_length = gamma_ * (1/diff.shape[0]) * torch.sum(diff ** 2)
+        loss_batch += loss_length
     elif type_dist == "axes":
         dist = torch.abs(h)
-        # if phase == 1:
-        #     dist2 = torch.abs(h)
-        # else:
-        #     d1 = -torch.abs(h1)[:, 0] + torch.abs(h1)[:, 1]
-        #     d2 = torch.abs(h2)[:, 0] - torch.abs(h2)[:, 1]
-        #     dist2 = torch.cat((d1.view(-1, 1), d2.view(-1, 1)), 1)
-
-    elif type_dist == "angle":
-        batch_size = h.shape[0]
-        dim = h.shape[1]
-        eps = 1e-6
-        L2_ = torch.sum(h ** 2, dim=1).repeat(dim).view(-1, dim)
-        L2 = torch.clamp(L2_, eps, np.inf)
-        div_ = torch.div(h ** 2, L2)
-        div = torch.clamp(div_, eps, 1.0)
-        c = torch.FloatTensor([-1, 1]).repeat(batch_size).view(-1, dim)
-        d = torch.FloatTensor([1, 0]).repeat(batch_size).view(-1,dim)
-        dist = c * div + d
 
     if type_loss == "dist":
-        # relaxation of the Indicator function
-        I_relaxed = F.softmax(-1*alpha_* dist, dim = 1)
+        # relaxation of the Indicator function by means of the softmax function
+        I_relaxed = F.softmax(-1 * alpha_ * dist, dim = 1)
         # compute the loss by multiplying the Indicator function and the distance
-        loss_dist = beta_ * torch.sum(I_relaxed * dist)
-        loss_dist = check_non_neagtive_loss(loss_dist, "loss_dist")
+        loss_dist = beta_ * (1/I_relaxed.shape[0]) * torch.sum(I_relaxed * dist)
+        loss_dist = check_non_neagtive_loss(loss_dist, "loss_dist", x, x_reconstructed)
         loss_batch += loss_dist
         return loss_batch, loss_rec, loss_dist
-    elif type_loss == "entropy":
-        # compute the entropy depending on the phase
-        # if phase == 1:
-        #     dist_entropy = F.softmax(-1*alpha_ * dist2, dim=1) * F.log_softmax(-1*alpha_ * dist2, dim=1)
-        #     loss_entropy = -1.0 * beta_ * dist_entropy.sum()
-        # else:
-        #     dist_entropy = F.softmax(alpha_ * dist2, dim=1) * F.log_softmax(alpha_ * dist2, dim=1)
-        #     loss_entropy = -10 * beta_ * dist_entropy.sum()
-        dist_entropy = F.softmax(-alpha_ * dist, dim=1) * F.log_softmax(-alpha_ * dist, dim=1)
-        loss_entropy = -1.0 * beta_ * dist_entropy.sum()
-        loss_entropy = check_non_neagtive_loss(loss_entropy, "loss_entropy")
-        loss_batch += loss_entropy
-        loss_KL = KL_loss(dist, alpha_, gamma_, p_ref)
-        loss_KL = check_non_neagtive_loss(loss_KL, "loss_KL")
-        loss_batch += loss_KL
-        return loss_batch, loss_rec, loss_entropy, loss_KL
+    elif type_loss == "log_dist":
+        # relaxation of the Indicator function by means of the softmax function
+        I_relaxed = F.softmax(-1 * alpha_ * dist, dim=1)
+        # compute the loss by multiplying the Indicator function and the distance
+        eps = 0.1 * torch.ones_like(dist)
+        loss_dist_log = beta_ * (1 / I_relaxed.shape[0]) * torch.sum(I_relaxed * torch.log(dist+eps))
+        loss_batch += loss_dist_log
+        return loss_batch, loss_rec, loss_dist_log
+
+
+    #----------------------------------Frozen code ------------------------------------------------#
+    # elif type_loss == "entropy":
+    #
+    #     dist_entropy = F.softmax(-alpha_ * dist, dim=1) * F.log_softmax(-alpha_ * dist, dim=1)
+    #     loss_entropy = -1.0 * beta_ * dist_entropy.sum()
+    #     loss_entropy = check_non_neagtive_loss(loss_entropy, "loss_entropy")
+    #     loss_batch += loss_entropy
+    #     loss_KL = KL_loss(dist, alpha_, gamma_, p_ref)
+    #     loss_KL = check_non_neagtive_loss(loss_KL, "loss_KL")
+    #     loss_batch += loss_KL
+    #     return loss_batch, loss_rec, loss_entropy, loss_KL
 
 
 # ---------------------------------------------Frozen code -------------------------------------------------------------

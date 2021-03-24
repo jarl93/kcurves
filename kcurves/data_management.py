@@ -1,6 +1,6 @@
 # libraries
 import numpy as np
-from helpers import load_config
+from helpers import load_config, Read_Two_Column_File, Read_One_Column_File
 from data import SyntheticDataset
 from torchvision import datasets, transforms
 def load_data_set(cfg_path, verbose = True):
@@ -28,7 +28,9 @@ def load_data_set(cfg_path, verbose = True):
                                       download = False)
 
 
-    elif cfg_file["data"]["data_set"] == "synthetic_functions":
+    elif cfg_file["data"]["data_set"] == "synthetic_functions" or \
+         cfg_file["data"]["data_set"] == "synthetic_functions" or \
+         cfg_file["data"]["data_set"] == "synthetic_lines":
 
         X_train = np.load(cfg_file["data"]["train"]+"X_train.npy")
         Y_train = np.load(cfg_file["data"]["train"]+"Y_train.npy")
@@ -44,20 +46,29 @@ def load_data_set(cfg_path, verbose = True):
             print("Shape X_test: ", X_test.shape)
             print("Shape Y_test: ", Y_test.shape)
 
-    elif cfg_file["data"]["data_set"] == "synthetic_clusters":
-        X_train = np.load(cfg_file["data"]["train"]+"X_train.npy")
-        Y_train = np.load(cfg_file["data"]["train"]+"Y_train.npy")
-        X_test =  np.load(cfg_file["data"]["test"]+"X_test.npy")
-        Y_test = np.load(cfg_file["data"]["test"]+ "Y_test.npy")
+    elif cfg_file["data"]["data_set"] == "basic_benchmarking":
+        X_train = Read_Two_Column_File(cfg_file["data"]["train_data"])
+        centers_train = Read_Two_Column_File(cfg_file["data"]["train_centers"])
+        X_train, centers_train = normalize_data(X_train, centers_train)
+        Y_train = Read_One_Column_File(cfg_file["data"]["train_labels"])
+        # use labels starting at 0
+        Y_train = Y_train - 1
 
-        train_dataset = SyntheticDataset(data = X_train, labels = Y_train)
-        test_dataset = SyntheticDataset(data = X_test, labels = Y_test)
+        # save the matrices with the training data
+        np.save(cfg_file["data"]["train"]+ "centers_train", centers_train)
+        np.save(cfg_file["data"]["test"] + "centers_test", centers_train)
+        np.save(cfg_file["data"]["train"] + "X_train", X_train)
+        np.save(cfg_file["data"]["train"] + "Y_train", Y_train)
 
+        # test and train are the same
+        train_dataset = SyntheticDataset(data=X_train, labels=Y_train)
+        test_dataset = SyntheticDataset(data=X_train, labels=Y_train)
         if verbose:
             print("Shape X_train: ", X_train.shape)
             print("Shape Y_train: ", Y_train.shape)
-            print("Shape X_test: ", X_test.shape)
-            print("Shape Y_test: ", Y_test.shape)
+
+
+
 
     data_set = (train_dataset, test_dataset)
 
@@ -66,7 +77,7 @@ def load_data_set(cfg_path, verbose = True):
 
     return data_set
 
-def normalize_data(X, verbose=False):
+def normalize_data(X, centers = None, verbose=False):
     """
     Normalize the data by subtracting the mean and dividing by the variance.
     Arguments:
@@ -76,16 +87,19 @@ def normalize_data(X, verbose=False):
     Output: X normalized
     """
     mean = np.mean(X, axis=0)
-    var = np.var(X, axis=0)
+    std = np.std(X, axis=0)
 
     if verbose:
         print("Function: ", normalize_data.__name__)
         print("Mean: ", mean)
-        print("Varaince: ", var)
+        print("Std: ", std)
 
-    X = (X - mean) / var
-
-    return X
+    X = (X - mean) / std
+    if centers is not None:
+        centers = (centers - mean) / std
+        return X, centers
+    else:
+        return X
 def scale_data(X, scale_factor, verbose = False):
     """
     Scales data, such that all the points are in the square bottom_left = (-1,-1), upper_right = (1,1).

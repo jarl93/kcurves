@@ -7,6 +7,14 @@ import yaml
 from torch.utils.tensorboard import SummaryWriter
 import torch
 import torch.nn.functional as F
+import csv
+from torch import linalg as LA
+from sklearn import metrics
+from sklearn.metrics.cluster import normalized_mutual_info_score
+from sklearn.metrics.cluster import adjusted_rand_score
+import pylab as pl
+from matplotlib import collections  as mc
+from matplotlib import colors as mcolors
 
 def imshow(list_images):
     """
@@ -17,6 +25,7 @@ def imshow(list_images):
     """
     num_images = len(list_images)
     fig = plt.figure(figsize=(10, 10))
+
 
     for idx_img, pair_image in enumerate(list_images):
         img_original, img_reconstructed = pair_image
@@ -72,7 +81,8 @@ def plot_X2D_visualization(X, labels, title, num_classes, cluster_centers=None):
 
     return fig
 
-def plot_2D_visualization_clusters(list_X, list_vars, labels, titles, num_classes, levels_contour, accuracy):
+def plot_2D_visualization_clusters(list_X, labels, predictions_kmeans, predictions, list_rep, titles,
+                                   num_classes, metrics, metrics_kmeans, type_dist):
     """
     Visualizes outputs (inputs) of the auto-encoder.
     :param list_X: List [X_input, X_reconstructed, H, softmax(H)], where:
@@ -86,30 +96,85 @@ def plot_2D_visualization_clusters(list_X, list_vars, labels, titles, num_classe
     :param num_classes: Number of classes.
     :return: fig: figure with the plots.
     """
-
+    cdict = {0: 'darkgreen', 1: 'gold', 2: 'olive', 3: 'brown', 4: 'coral',
+             5: 'yellow', 6: 'tan', 7: 'brown', 8: 'salmon', 9: 'gray',
+             10: 'indigo', 11: 'sienna', 12: 'khaki', 13: 'lavender', 14: 'lime'}
+    list_pca_trans = []
+    list_dim = []
     for i in range(len(list_X)):
+        list_dim.append(list_X[i].shape[1])
         if list_X[i].shape[1] > 2:
             print("Running PCA...")
-            list_X[i] = run_PCA(list_X[i])
+            list_X[i], pca_trans = run_PCA(list_X[i])
+            list_pca_trans.append(pca_trans)
+        else:
+            list_pca_trans.append(None)
 
-    list_cx = [0, 0, 1, 1, 2, 2]
-    list_cy = [0, 1, 0, 1, 0, 1]
+
+    list_cx = [0, 0, 1, 1]
+    list_cy = [0, 1, 0, 1]
 
     plt.switch_backend('agg')
-    fig, axs = plt.subplots(3, 2, figsize=(10, 15))
+    fig, axs = plt.subplots(2, 2, figsize=(10, 10))
 
     for i in range(len(list_X)):
         cx = list_cx[i]
         cy = list_cy[i]
         X  = list_X[i]
+        dim = list_dim[i]
         title = titles[i]
+        rep = list_rep[i]
+        pca_trans = list_pca_trans[i]
         # loop to plot the clusters depending on the given labels
         for j in range(num_classes):
-            idx = np.where(labels == j)
-            axs[cx, cy].scatter(X[idx, 0], X[idx, 1], cmap='viridis')
+            if i == 0:
+                idx = np.where(labels == j)
+            elif i == 3:
+                idx = np.where(predictions_kmeans == j)
+            else:
+                idx = np.where(predictions == j)
+            axs[cx, cy].scatter(X[idx, 0], X[idx, 1], color = cdict[j], linewidths = 0.1, alpha = 0.5)
             axs[cx, cy].set_title(title)
-        if i == 3:
-            axs[cx, cy].legend(accuracy)
+            if i == 3:
+                axs[cx, cy].legend(metrics_kmeans)
+
+
+        # first point of the segments
+        s1 = rep[:, :dim]
+
+        if pca_trans is not None:
+            s1 = pca_trans.transform(s1)
+
+        axs[cx, cy].scatter(s1[:, 0], s1[:, 1], color='red', linewidths=0.75, alpha=1)
+
+        if (i == 1 or i == 2) and type_dist == "segments":
+
+            # second point of the segments and interpolation points
+            s2 = rep[:, dim:]
+
+            s_inter = list_rep[i + 3]
+            if pca_trans is not None:
+                s2 = pca_trans.transform(s2)
+                s_inter = pca_trans.transform(s_inter)
+
+            axs[cx, cy].scatter(s2[:, 0], s2[:, 1], color='green', linewidths=0.75, alpha=1)
+
+            # code to draw points from interpolation
+            if i == 1:
+                axs[cx, cy].scatter(s_inter[:, 0], s_inter[:, 1], color='black', linewidths=0.1, alpha=1)
+
+            # code to draw lines in 2-D
+            if i==2:
+                rep_reshaped = rep.reshape(-1, dim, dim)
+                lc = mc.LineCollection(rep_reshaped, colors='black', linewidths=2)
+                axs[cx, cy].add_collection(lc)
+
+            axs[cx, cy].legend(metrics)
+
+        axs[cx, cy].set_aspect('equal')
+
+
+
 
 
 
@@ -142,6 +207,7 @@ def plot_2D_visualization_generation_functions(list_functions, X, labels, num_cl
         -fig: Figure with the plots.
     """
 
+
     if X.shape[1] > 2:
         X = run_PCA(X)
 
@@ -162,13 +228,13 @@ def plot_2D_visualization_generation_functions(list_functions, X, labels, num_cl
     # make plot for synthetic data (training or test data)
     for i in range(num_classes):
         idx = np.where(labels == i)
-        axs[0, 1].scatter(X[idx, 0], X[idx, 1], cmap='viridis')
+        axs[0, 1].scatter(X[idx, 0], X[idx, 1], cmap = 'viridis')
         axs[0, 1].set_title(titles[1])
 
     # make plot for k-means on synthetic data (training or test data)
     for i in range(num_classes):
         idx = np.where(labels_kmeans == i) # plot the clusters depending on the given labels
-        axs[1, 0].scatter(X[idx, 0], X[idx, 1], cmap='viridis')
+        axs[1, 0].scatter(X[idx, 0], X[idx, 1], cmap = 'viridis')
 
     # plot the center of the clusters if any
     if cluster_centers is not None:
@@ -179,6 +245,8 @@ def plot_2D_visualization_generation_functions(list_functions, X, labels, num_cl
     axs[1, 0].set_title(titles[2])
 
     return fig
+
+
 
 
 def plot_functions(list_functions, title):
@@ -203,6 +271,22 @@ def plot_functions(list_functions, title):
     ax.legend(list_legends)
 
     return fig
+def get_interpolation(s1, s2, num_points):
+
+    dim0 = s1.shape[0]
+    dim1 = s1.shape[1]
+    s1 = s1.repeat(num_points, 1)
+    s2 = s2.repeat(num_points, 1)
+
+    s_alphas = torch.tensor(np.linspace(0,1,num_points)).type(torch.FloatTensor)
+    s_alphas = s_alphas.view(1,-1).repeat(dim0, 1).T.reshape(-1,1).repeat(1, dim1)
+    print("s1 shape: ", s1.shape)
+    print("s2 shape: ", s2.shape)
+    print("s_alphas shape: ", s_alphas.shape)
+
+    s_inter = s_alphas * s1 + (1 - s_alphas) * s2
+
+    return s_inter
 
 def transform_low_to_high(X_low, F_non_linear, list_W):
     """
@@ -239,9 +323,10 @@ def run_PCA(X, n_components=2):
         X_pca: Projection of the data in n_components as a result of PCA.
     """
     pca = PCA(n_components=n_components)
-    X_pca = pca.fit(X).transform(X)
+    pca_trans = pca.fit(X)
+    X_pca = pca_trans.transform(X)
 
-    return X_pca
+    return X_pca, pca_trans
 
 def sigmoid(x):
     """
@@ -315,6 +400,7 @@ def distance_axes_pair(x, y):
     a, b = softmax_pair(x, y)
     return a * np.absolute(x) + b * np.absolute(y)
 
+# TODO: Change the name to pairwise_distance_points
 def pairwise_distances(x, y):
     '''
     Arguments: x is a (N,d) tensor
@@ -328,6 +414,36 @@ def pairwise_distances(x, y):
     dist = x_norm + y_norm - 2.0 * torch.mm(x, y_t)
 
     return torch.clamp(dist, 0.0, np.inf)
+
+def pairwise_distances_segments(X, s):
+
+    dim = X.shape[1]
+
+    # s2 - s1
+    diff = s[:, dim:] - s[:, :dim]
+    norm = LA.norm(diff, dim=1) ** 2
+    norm = norm.view(-1, 1).repeat(1, dim)
+    eps = 1e-9
+    diff_norm = diff / (norm + eps)
+
+    # TODO: Use matrices to avoid for loop if possible
+    for i in range(diff.shape[0]):
+        s1_i = s[i, :dim].repeat(X.shape[0], 1)
+        diff_norm_i = diff_norm[i, :].repeat(X.shape[0], 1)
+        diff_i = diff[i, :].repeat(X.shape[0], 1)
+        mult = (X - s1_i) * diff_norm_i
+        dot = torch.sum(mult, dim = 1)
+        t = torch.clamp(dot, min = 0.0, max = 1.0)
+        t_i = t.reshape(-1, 1).repeat(1, dim)
+        t_opt = s1_i + t_i * (diff_i)
+        dist_i = torch.sum((X - t_opt) ** 2, dim=1).view(-1, 1)
+        if i == 0:
+            dist = dist_i
+        else:
+            dist = torch.cat((dist, dist_i), 1)
+
+    return torch.clamp(dist, 0.0, np.inf)
+
 
 def load_config(path="configs/default.yaml") -> dict:
     """
@@ -369,20 +485,18 @@ def get_hyperparameters(cfg_path):
     num_epochs = cfg_file["train"]["num_epochs"]
     type_dist = cfg_file["train"]["type_dist"]
     type_loss = cfg_file["train"]["type_loss"]
-    alpha_ = cfg_file["train"]["alpha"]
+    alpha_init = cfg_file["train"]["alpha_init"]
     beta_type = cfg_file["train"]["beta_type"]
-    beta_fixed = cfg_file["train"]["beta_fixed"]
-    beta_min = cfg_file["train"]["beta_min"]
-    beta_max = cfg_file["train"]["beta_max"]
-    gamma_ = cfg_file["train"]["gamma"]
-    lambda_ = cfg_file["train"]["lambda"]
-
+    beta_init = cfg_file["train"]["beta_init"]
+    gamma_type = cfg_file["train"]["gamma_type"]
+    gamma_init = cfg_file["train"]["gamma_init"]
+    centers_init_type = cfg_file["train"]["centers_init_type"]
     dic_hyperparameters = {"type_dist": type_dist, "type_loss": type_loss,
-                           "beta_type": beta_type, "beta_fixed": beta_fixed,
-                           "beta_min": beta_min, "beta_max": beta_max,
-                           "gamma": gamma_, "lambda": lambda_,
+                           "centers_init_type": centers_init_type,
+                           "beta_type": beta_type, "beta_init": beta_init,
+                           "gamma_type": gamma_type, "gamma_init": gamma_init,
                            "num_epochs": num_epochs,
-                           "alpha": alpha_, "lr": lr}
+                           "alpha_init": alpha_init, "lr": lr}
 
     return dic_hyperparameters
 
@@ -441,3 +555,40 @@ def unfreeze_module(module):
         param.requires_grad = True
 
     return None
+
+def Read_Two_Column_File(file_name):
+    with open(file_name, 'r') as f_input:
+        csv_input = csv.reader(f_input, delimiter=' ', skipinitialspace=True)
+        x = []
+        y = []
+        for cols in csv_input:
+            x.append(float(cols[0]))
+            y.append(float(cols[1]))
+        X = np.vstack((x, y))
+    return X.T
+
+def Read_One_Column_File(file_name):
+    with open(file_name, 'r') as f_input:
+        csv_input = csv.reader(f_input, delimiter=' ', skipinitialspace=True)
+        labels = []
+        for cols in csv_input:
+            labels.append(float(cols[0]))
+    return np.array(labels)
+
+# metrics to evaluate quality of the clustering
+def get_purity(labels, predictions):
+
+    confusion_matrix = metrics.cluster.contingency_matrix(labels, predictions)
+    purity_score = np.sum(np.amax(confusion_matrix, axis=0)) / np.sum(confusion_matrix)
+
+    return np.round(purity_score, 3)
+
+def get_NMI(labels, predictions):
+
+    NMI = normalized_mutual_info_score(labels, predictions)
+    return np.round(NMI, 3)
+
+def get_ARI(labels, predictions):
+
+    ARI = adjusted_rand_score (labels, predictions)
+    return np.round(ARI, 3)

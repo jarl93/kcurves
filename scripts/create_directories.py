@@ -6,7 +6,9 @@ if __name__ == "__main__":
 
     # create directory for data
     create_dir("./data/synthetic_"+FILLER)
-
+    create_dir("./data/synthetic_"+FILLER+"/train")
+    create_dir("./data/synthetic_"+FILLER+"/test")
+    create_dir("./data/synthetic_"+FILLER+"/plots")
 
     # define paths for training and test data, plots ad models
     train_path = "./data/synthetic_"+FILLER+"/train/"
