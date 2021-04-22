@@ -25,9 +25,191 @@ def generate_list(str_, num_tests, char):
         else:
             list_str.append(str_ + num + "/")
     return list_str
+def write_config_training_real(path_config_files, list_names, list_model_names, list_model_paths,
+                               list_evolution_paths, list_log_names):
+    """
+    Writes the config file for the training and testing.
+    :param path_config_files:
+    :param list_names:
+    :param list_train_paths:
+    :param list_test_paths:
+    :param list_model_names:
+    :param list_model_paths:
+    :param list_evolution_paths:
+    :return:
+    """
+    # TODO: Consider to make lists for the hyperparameters
+    # in the case for real data, the directory does not change
+    filler_aux = FILLER + "_data"
 
-def write_config_training(path_config_files, list_names, list_train_paths, list_test_paths,
-                          list_model_names, list_model_paths, list_evolution_paths):
+    # data
+
+    train_path = "./data/"+filler_aux+"/"
+    test_path = "./data/"+filler_aux+"/"
+    validation = True
+    num_classes = 10
+
+    # percentage_data_train = 0.01
+    # percentage_data_test = 0.5
+
+    full_training = False
+
+    num_iterations = 3
+
+    # train:
+    batch_size = 256
+    num_epochs = 200
+
+    epochs_warmup = 0
+
+    NUM_CASES_FIX = 15
+
+    alpha_type_list = NUM_CASES_FIX * ["annealing"]
+    alpha_list = NUM_CASES_FIX * [0.1]
+    annealing_frequency_change = 5
+
+    beta_type_list = NUM_CASES_FIX * ["fixed"]
+    #beta_list = [100, 10, 1, 0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001]
+    beta_list = 5*[0.00001] +  5*[0.0001] + 5*[0.001]
+
+    gamma_list = 3 * [1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
+    gamma_type_list = NUM_CASES_FIX * ["fixed"]
+
+
+    # TODO: Change to type_rep
+    type_dist_list = NUM_CASES_FIX * ["segments"]
+    # type_dist_list = NUM_CASES_FIX * ["points"]
+    min_init = -1
+    diff_init = 2
+    max_length_start = 0.5
+    type_loss_list = NUM_CASES_FIX * ["log_dist"]
+    # type_loss_list = NUM_CASES_FIX * ["dist"]
+
+    lambda_ = 1e-6
+    # centers_init_type_list = NUM_CASES_FIX * ["PCA_proportional_dist"]
+    # centers_init_type_list = NUM_CASES_FIX * ["forgy"]
+    centers_init_type_list = NUM_CASES_FIX * ["max_length_random"]
+    #centers_init_type_list = NUM_CASES_FIX * ["random"]
+
+    percentage_K_list = NUM_CASES_FIX *  [0.10]
+    lr = 0.001
+    batch_frequency_loss = 1
+    epochs_frequency_evolution = 20
+    save_evolution = True
+    evolution = True
+    # test:
+    mode_forced = "test"
+    batch_size = 256
+
+
+    # model:
+    input_dim = 784
+    latent_dim = 10
+    layer_sizes_encoder = [784, 500, 500, 2000]
+    layer_sizes_decoder = [2000, 500, 500, 784]
+    device = 'cuda'
+    # device = 'cpu'
+
+    # tracing:
+    x_interval = [-1, 1]
+    y_interval = [-1, 1]
+    delta_interval = 0.01
+    levels_contour = 20
+    batch_frequency = 10
+    num_points_inter = 10
+    #visualization = "TSNE"
+
+    for i in range(1, NUM_TESTS + 1):
+        idx = (i -1) // TESTS_PER_CASE
+        type_loss = type_loss_list[idx]
+        type_dist = type_dist_list[idx]
+        beta_init = beta_list[idx]
+        beta_type = beta_type_list[idx]
+        gamma_init = gamma_list[idx]
+        gamma_type = gamma_type_list[idx]
+        percentage_K = percentage_K_list[idx]
+        centers_init_type = centers_init_type_list[idx]
+        alpha_init = alpha_list[idx]
+        alpha_type = alpha_type_list[idx]
+        path = path_config_files + list_names[i] + ".yaml"
+        f = open(path, "w")
+        # write the files
+        f.write("name: " + list_names[i] + "\n")
+        f.write("data:\n")
+        f.write("  data_set: " + str(DATA_SET) + "\n")
+        f.write("  train: " + str(train_path) + "\n")
+        f.write("  test: " + str(test_path) + "\n")
+        f.write("  validation: " + str(validation) + "\n")
+        # f.write("  percentage_data_train: " + str(percentage_data_train) + "\n")
+        # f.write("  percentage_data_test: " + str(percentage_data_test) + "\n")
+        f.write("  full_training: " + str(full_training) + "\n")
+        f.write("  num_classes: " + str(num_classes) + "\n")
+
+        f.write("train:\n")
+        f.write("  num_iterations: " + str(num_iterations) + "\n")
+        f.write("  batch_size: " + str(batch_size) + "\n")
+        f.write("  num_epochs: " + str(num_epochs) + "\n")
+        f.write("  epochs_warmup: " + str(epochs_warmup) + "\n")
+        f.write("  annealing_frequency_change: " + str(annealing_frequency_change) + "\n")
+        f.write("  alpha_type: " + str(alpha_type) + "\n")
+        f.write("  alpha_init: " + str(alpha_init) + "\n")
+        f.write("  beta_type: "+str(beta_type)+ "\n")
+        f.write("  beta_init: "+ format(beta_init, ".6f") + "\n")
+        f.write("  gamma_type: " + str(gamma_type) + "\n")
+        f.write("  gamma_init: " + format(gamma_init, ".9f") + "\n")
+        f.write("  lambda: " + format(lambda_, ".6f") + "\n")
+        f.write("  centers_init_type: " + str(centers_init_type) + "\n")
+        f.write("  min_init: " + str(min_init) + "\n")
+        f.write("  diff_init: " + str(diff_init) + "\n")
+        f.write("  percentage_K: " + str(percentage_K) + "\n")
+        f.write("  type_loss: " + str(type_loss) + "\n")
+        f.write("  type_dist: " + str(type_dist) + "\n")
+        f.write("  max_length_start: " + str(max_length_start) + "\n")
+        f.write("  lr: " + str(lr) + "\n")
+        f.write("  batch_frequency_loss: " + str(batch_frequency_loss) + "\n")
+        f.write("  evolution : " + str(evolution) + "\n")
+        f.write("  epochs_frequency_evolution : " + str(epochs_frequency_evolution) + "\n")
+        f.write("  save_evolution : " + str(save_evolution) + "\n")
+
+        f.write("test:\n")
+        f.write("  mode_forced: " + str(mode_forced) + "\n")
+        f.write("  batch_size: " + str(batch_size) + "\n")
+
+        f.write("model:\n")
+        f.write("  path: " + list_model_paths[i] + "\n")
+        f.write("  evolution_path: " + list_evolution_paths[i]+ "\n")
+        f.write("  name: " + list_model_names[i] + "\n")
+        f.write("  save: True\n")
+        f.write("  device: " + device + "\n")
+        f.write("  encoder:\n")
+        f.write("    layer_sizes: " + str(layer_sizes_encoder) + "\n")
+        f.write("    last_nn_layer: Identity\n")
+        f.write("  decoder:\n")
+        f.write("    layer_sizes: " + str(layer_sizes_decoder) + "\n")
+        f.write("    last_nn_layer: Identity\n")
+        f.write("  input_dim: " + str(input_dim) + "\n")
+        f.write("  latent_dim: " + str(latent_dim) + "\n")
+
+        f.write("tracing:\n")
+        f.write("  log_name: "+list_log_names[i]+"\n")
+        f.write("  show_images: False\n")
+        f.write("  images_to_show: 10\n")
+        f.write("  visualize_latent: True\n")
+        f.write("  x_interval: " + str(x_interval) + "\n")
+        f.write("  y_interval: " + str(y_interval) + "\n")
+        f.write("  delta_interval: " + str(delta_interval) + "\n")
+        f.write("  levels_contour: " + str(levels_contour) + "\n")
+        f.write("  batch_frequency: " + str(batch_frequency) + "\n")
+        f.write("  num_points_inter: " + str(num_points_inter) + "\n")
+        #f.write("  visualization: " + str(visualization) + "\n")
+
+        f.close()
+
+    return None
+
+
+def write_config_training_synthetic(path_config_files, list_names, list_train_paths, list_test_paths,
+                          list_model_names, list_model_paths, list_evolution_paths, list_log_names):
     """
     Writes the config file for the training and testing.
     :param path_config_files:
@@ -75,7 +257,7 @@ def write_config_training(path_config_files, list_names, list_train_paths, list_
     #                     "decay", "decay"]
 
 
-    gamma_list = [0, 0, 0.001, 0.001, 0.01, 0.01, 0.1, 0.1, 1, 1]
+    gamma_list = NUM_CASES_FIX * [0.001]
     gamma_type_list = NUM_CASES_FIX * ["fixed"]
 
 
@@ -109,9 +291,9 @@ def write_config_training(path_config_files, list_names, list_train_paths, list_
 
     # model:
     input_dim = 100
-    latent_dim = 2
-    layer_sizes_encoder = [input_dim, 50, 10, latent_dim]
-    layer_sizes_decoder = [latent_dim, 10, 50, input_dim]
+    latent_dim = 9
+    layer_sizes_encoder = [input_dim, 64, 32, latent_dim]
+    layer_sizes_decoder = [latent_dim, 32, 64, input_dim]
     #input_dim = 100
     #latent_dim = 9
     #layer_sizes_encoder = [input_dim, 64, 32, latent_dim]
@@ -194,6 +376,7 @@ def write_config_training(path_config_files, list_names, list_train_paths, list_
         f.write("  latent_dim: " + str(latent_dim) + "\n")
 
         f.write("tracing:\n")
+        f.write("  log_name: "+list_log_names[i]+"\n")
         f.write("  show_images: False\n")
         f.write("  images_to_show: 10\n")
         f.write("  visualize_latent: True\n")
@@ -439,63 +622,77 @@ def main():
 
     args = ap.parse_args()
 
+    if FILLER in ["functions","clusters","lines"]:
+        filler_aux = "synthetic_" + FILLER
+    elif FILLER in ["mnist"]:
+        filler_aux = "real_" + FILLER
+
     # create directory for the config files
-    path_config_files = "./configs/synthetic_"+FILLER+"/"
+    path_config_files = "./configs/"+filler_aux+"/"
     create_dir(path_config_files)
 
     # main paths for training data, test data and plots (generated data)
-    train_path = "./data/synthetic_"+FILLER+"/train/"
-    test_path = "./data/synthetic_"+FILLER+"/test/"
-    plot_path = "./data/synthetic_"+FILLER+"/plots/"
+    train_path = "./data/"+filler_aux+"/train/"
+    test_path = "./data/"+filler_aux+"/test/"
+    plot_path = "./data/"+filler_aux+"/plots/"
 
     # code to generate config files that generate data
     if args.generation or args.all:
         # create directory for the config generation files
 
-        path_config_generation_files = "./configs/synthetic_"+FILLER+"_generation/"
-        create_dir(path_config_generation_files)
-        name = "synthetic_"+FILLER+"_generation"
-        # lists with the paths for the training data, test data and plots
-        list_names = generate_list(name, NUM_TESTS, "_")
-        list_train_paths = generate_list(train_path, NUM_TESTS, "/")
-        list_test_paths = generate_list(test_path, NUM_TESTS, "/")
-        list_plot_paths = generate_list(plot_path, NUM_TESTS, "/")
+        if FILLER in ["functions", "clusters", "lines"]:
+            path_config_generation_files = "./configs/"+filler_aux+"_generation/"
+            create_dir(path_config_generation_files)
+            name = filler_aux+"_generation"
+            # lists with the paths for the training data, test data and plots
+            list_names = generate_list(name, NUM_TESTS, "_")
+            list_train_paths = generate_list(train_path, NUM_TESTS, "/")
+            list_test_paths = generate_list(test_path, NUM_TESTS, "/")
+            list_plot_paths = generate_list(plot_path, NUM_TESTS, "/")
 
-        # write config file for generation
-        if DATA_SET == "synthetic_functions":
-            write_config_synthetic_functions_generation(path_config_generation_files, list_names, list_train_paths,
-                                                        list_test_paths, list_plot_paths)
-        elif DATA_SET == "synthetic_clusters":
-            write_config_synthetic_clusters_generation(path_config_generation_files, list_names, list_train_paths,
-                                                       list_test_paths, list_plot_paths)
-        elif DATA_SET == "synthetic_lines":
-            write_config_synthetic_lines_generation(path_config_generation_files, list_names, list_train_paths,
-                                                       list_test_paths, list_plot_paths)
+            # write config file for generation
+            if DATA_SET == "synthetic_functions":
+                write_config_synthetic_functions_generation(path_config_generation_files, list_names, list_train_paths,
+                                                            list_test_paths, list_plot_paths)
+            elif DATA_SET == "synthetic_clusters":
+                write_config_synthetic_clusters_generation(path_config_generation_files, list_names, list_train_paths,
+                                                           list_test_paths, list_plot_paths)
+            elif DATA_SET == "synthetic_lines":
+                write_config_synthetic_lines_generation(path_config_generation_files, list_names, list_train_paths,
+                                                           list_test_paths, list_plot_paths)
 
 
     # code to generate config files for training and testing
     if args.training or args.all:
 
         # create directories for config files and define path
-        path_config_files = "./configs/synthetic_"+FILLER+"/"
+
+
+        path_config_files = "./configs/"+filler_aux+"/"
         create_dir(path_config_files)
-        name = "synthetic_"+FILLER
-        model_name = "model_"+FILLER
-        model_path = "./models/synthetic_"+FILLER+"/"
-        evolution_path = "./models/synthetic_"+FILLER+"_evolution/"
+        name = filler_aux
+        model_path = "./models/"+filler_aux+"/"
+        evolution_path = "./models/"+filler_aux+"_evolution/"
+
+        model_name = "model_"+filler_aux
+        log_name = filler_aux
 
         # create lists with train, test and model paths
         list_names = generate_list(name, NUM_TESTS, "_")
         list_train_paths = generate_list(train_path, NUM_TESTS, "/")
         list_test_paths = generate_list(test_path, NUM_TESTS, "/")
         list_model_names = generate_list(model_name, NUM_TESTS, "_")
+        list_log_names = generate_list(log_name, NUM_TESTS, "_")
         list_model_paths = generate_list(model_path, NUM_TESTS, "/")
         list_evolution_paths = generate_list(evolution_path, NUM_TESTS, "/")
 
         # write config file for training
-        write_config_training(path_config_files, list_names, list_train_paths, list_test_paths,
-                              list_model_names, list_model_paths, list_evolution_paths)
-
+        if FILLER in ["functions","clusters","lines"]:
+            write_config_training_synthetic(path_config_files, list_names, list_train_paths, list_test_paths,
+                                  list_model_names, list_model_paths, list_evolution_paths, list_log_names)
+        elif FILLER in ["mnist"]:
+            write_config_training_real(path_config_files, list_names, list_model_names,
+                                       list_model_paths, list_evolution_paths, list_log_names)
 
 if __name__ == "__main__":
     main()

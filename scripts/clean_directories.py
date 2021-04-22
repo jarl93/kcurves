@@ -41,15 +41,19 @@ def main():
                     help='Clean the training and test data.')
 
     args = ap.parse_args()
+    if FILLER in ["functions","clusters","lines"]:
+        filler_aux = "synthetic_" + FILLER
+    elif FILLER in ["mnist"]:
+        filler_aux = "real_" + FILLER
 
-    config_path ="./configs/synthetic_"+FILLER+"/"
-    config_generation_path = "./configs/synthetic_"+FILLER+"_generation/"
+    config_path ="./configs/"+filler_aux+"/"
+    config_generation_path = "./configs/"+filler_aux+"_generation/"
 
-    train_path = "./data/synthetic_"+FILLER+"/train/"
-    test_path = "./data/synthetic_"+FILLER+"/test/"
-    plot_path = "./data/synthetic_"+FILLER+"/plots/"
-    model_path = "./models/synthetic_"+FILLER+"/"
-    evolution_path = "./models/synthetic_" + FILLER + "_evolution/"
+    train_path = "./data/"+filler_aux+"/train/"
+    test_path = "./data/"+filler_aux+"/test/"
+    plot_path = "./data/"+filler_aux+"/plots/"
+    model_path = "./models/"+filler_aux+"/"
+    evolution_path = "./models/" + filler_aux + "_evolution/"
 
     if args.configs_generation or args.all:
         delete_dir(config_generation_path)
@@ -63,12 +67,12 @@ def main():
     list_evolution_paths = generate_list(evolution_path, NUM_TESTS, "/")
 
     for i in range(1, NUM_TESTS+1):
-        if args.data or args.all:
+        if args.data or args.all and FILLER in ["functions","clusters","lines"]:
             delete_dir(list_train_paths[i])
             delete_dir(list_test_paths[i])
             create_dir(list_train_paths[i])
             create_dir(list_test_paths[i])
-        if args.plots or args.all:
+        if args.plots or args.all and FILLER in ["functions","clusters","lines"]:
             delete_dir(list_plot_paths[i])
             create_dir(list_plot_paths[i])
         if args.models or args.all:
