@@ -1,12 +1,11 @@
 # libraries
 import torch.nn as nn
 import torch
-
-
+from constants import DEVICE
 
 class AE(nn.Module):
     def __init__(self, input_dim, encoder_layer_sizes, decoder_layer_sizes, latent_dim,
-                 last_nn_layer_encoder, last_nn_layer_decoder, rep_init, rep_type):
+                 rep_init, rep_type):
         """
         Arguments:
             input_dim (int): dimension of the input.
@@ -26,17 +25,20 @@ class AE(nn.Module):
 
         self.latent_dim = latent_dim
 
-        self.encoder = Encoder(encoder_layer_sizes, latent_dim, last_nn_layer_encoder)
-        self.decoder = Decoder(decoder_layer_sizes, latent_dim, last_nn_layer_decoder)
+        self.encoder = Encoder(encoder_layer_sizes, latent_dim)
+        self.decoder = Decoder(decoder_layer_sizes, latent_dim)
+
+        self.rep_type = rep_type
 
         # initialize the representatives
         if rep_type == "points":
-            centers_ = torch.tensor(rep_init).type(torch.FloatTensor)
-            centers_latent = self.encoder(centers_)
+            centers_latent = torch.tensor(rep_init).type(torch.FloatTensor)
             self.rep = nn.Parameter(centers_latent)
         elif rep_type == "segments":
-            s_latent = self.get_rep(rep_init)
-            self.set_rep(s_latent)
+            rep_tensor = torch.tensor(rep_init).type(torch.FloatTensor)
+            #s_latent = self.get_rep(rep_tensor)
+            #self.set_rep(s_latent)
+            self.set_rep(rep_tensor)
 
     def forward(self, x):
         """
@@ -57,12 +59,15 @@ class AE(nn.Module):
 
         return x_reconstructed
 
-    def get_rep(self, rep):
-        s1_ = torch.tensor(rep).type(torch.FloatTensor)[:, :self.input_dim]
-        s2_ = torch.tensor(rep).type(torch.FloatTensor)[:, self.input_dim:]
-        s1_latent = self.encoder(s1_)
-        s2_latent = self.encoder(s2_)
-        s_latent = torch.cat((s1_latent, s2_latent), 1)
+    def get_rep(self, s):
+        if self.rep_type == "points":
+            s_latent = self.encoder(s)
+        elif self.rep_type == "segments":
+            s1_ = s[:, :self.input_dim]
+            s2_ = s[:, self.input_dim:]
+            s1_latent = self.encoder(s1_)
+            s2_latent = self.encoder(s2_)
+            s_latent = torch.cat((s1_latent, s2_latent), 1)
 
         return s_latent
     def set_rep (self, rep):
@@ -72,7 +77,7 @@ class AE(nn.Module):
 
 class Encoder(nn.Module):
 
-    def __init__(self, layer_sizes, latent_dim, last_nn_layer_encoder):
+    def __init__(self, layer_sizes, latent_dim):
         super(Encoder, self).__init__()
         """
         Arguments:
@@ -86,8 +91,8 @@ class Encoder(nn.Module):
         self.hidden = nn.ModuleList()
         for k in range(len(layer_sizes) - 1):
             self.hidden.append(nn.Linear(layer_sizes[k], layer_sizes[k + 1]))
-            #self.hidden.append(nn.ReLU())
-            self.hidden.append(InverseSigmoid())
+            self.hidden.append(nn.ReLU())
+            #self.hidden.append(InverseSigmoid())
 
         # Output layer from the encoder
         self.out = nn.Linear(layer_sizes[-1], latent_dim)
@@ -96,14 +101,7 @@ class Encoder(nn.Module):
         # with torch.no_grad():
         #     self.out.weight.copy_(torch.eye(latent_dim))
 
-        self.last_nn_layer_encoder_name = last_nn_layer_encoder
 
-        if last_nn_layer_encoder == 'ReLU':
-            self.last_nn_layer_encoder = nn.ReLU()
-        elif last_nn_layer_encoder == 'Identity':
-            self.last_nn_layer_encoder = nn.Identity()
-        elif last_nn_layer_encoder == 'Softmax':
-            self.last_nn_layer_encoder = nn.Softmax(dim=1)
 
     def forward(self, x):
         """
@@ -119,19 +117,14 @@ class Encoder(nn.Module):
         for layer in self.hidden:
             x = layer(x)
 
-
         # Do the forward for the output layer
-        x = self.out(x)
-
-        # Do the forward for the last non-linear layer
-        z = self.last_nn_layer_encoder(x)
+        z = self.out(x)
 
         return z
 
-
 class Decoder(nn.Module):
 
-    def __init__(self, layer_sizes, latent_dim, last_nn_layer_decoder):
+    def __init__(self, layer_sizes, latent_dim):
         super(Decoder, self).__init__()
         """
         Arguments:
@@ -148,32 +141,24 @@ class Decoder(nn.Module):
         if len(layer_sizes) > 1:
             # Append the first layer of the decoder
             self.hidden.append(nn.Linear(latent_dim, layer_sizes[0]))
-            #self.hidden.append(nn.ReLU())
-            self.hidden.append(nn.Sigmoid())
+            self.hidden.append(nn.ReLU())
+            #self.hidden.append(nn.Sigmoid())
 
             # Append the layers in between
             for k in range(len(layer_sizes) - 2):
                 self.hidden.append(nn.Linear(layer_sizes[k], layer_sizes[k + 1]))
-                #self.hidden.append(nn.ReLU())
-                self.hidden.append(nn.Sigmoid())
+                self.hidden.append(nn.ReLU())
+                #self.hidden.append(nn.Sigmoid())
 
             # Append the last layer which considers the last element
             # from the list of layer_sizes, this could be done in the for loop
             # but it's done that way for the sake of neatness
-            self.out_linear = nn.Linear(layer_sizes[-2], layer_sizes[-1])
+            self.out = nn.Linear(layer_sizes[-2], layer_sizes[-1])
         else:
-            self.out_linear = nn.Linear(latent_dim, layer_sizes[-1])
-
+            self.out = nn.Linear(latent_dim, layer_sizes[-1])
             # code to fix the decoder
             # with torch.no_grad():
-            #     self.out_linear.weight.copy_(torch.eye(latent_dim))
-
-        if last_nn_layer_decoder == 'ReLU':
-            self.out_non_linear = nn.ReLU()
-        elif  last_nn_layer_decoder == 'Identity':
-            self.out_non_linear = nn.Identity()
-        elif last_nn_layer_decoder == 'Softmax':
-            self.out_non_linear = nn.Softmax(dim=1)
+            #     self.out.weight.copy_(torch.eye(latent_dim))
 
     def forward(self, z):
         """
@@ -188,10 +173,7 @@ class Decoder(nn.Module):
         for layer in self.hidden:
             x = layer(x)
 
-        # Do the forward for the output layer
-        # to get the reconstruction
-
-        x = self.out_non_linear(self.out_linear(x))
+        x = self.out(x)
 
         return x
 

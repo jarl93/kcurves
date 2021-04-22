@@ -9,7 +9,8 @@ from torch.utils.data import DataLoader
 from _datetime import datetime
 from helpers import pairwise_distances, pairwise_distances_segments
 from clustering import k_means
-
+from constants import DEVICE
+from initialization import PCA_proporcional_dist
 
 def test(cfg_path, model, data_set, mode_forced, mode, lap = "0"):
     """
@@ -25,22 +26,20 @@ def test(cfg_path, model, data_set, mode_forced, mode, lap = "0"):
     device = cfg_file["model"]["device"]
     batch_size = cfg_file["test"]["batch_size"]
     visualize_latent = cfg_file["tracing"]["visualize_latent"]
+    #visualization = cfg_file["tracing"]["visualization"]
     a_x, b_x = cfg_file["tracing"]["x_interval"]
     a_y, b_y = cfg_file["tracing"]["y_interval"]
     delta_interval = cfg_file["tracing"]["delta_interval"]
     levels_contour = cfg_file["tracing"]["levels_contour"]
     num_classes = cfg_file["data"]["num_classes"]
+    percentage_K = cfg_file["train"]["percentage_K"]
     show_images = cfg_file["tracing"]["show_images"]
     images_to_show = cfg_file["tracing"]["images_to_show"]
     #p_ref_opt = cfg_file["train"]["p_ref"]
-    dist_classes = cfg_file["data"]["dist_classes"]
     type_dist = cfg_file["train"]["type_dist"]
     input_dim = cfg_file["model"]["input_dim"]
     latent_dim = cfg_file["model"]["latent_dim"]
     num_points_inter = cfg_file["tracing"]["num_points_inter"]
-
-   #  get the initialization for the centers
-    centers_init = np.load(cfg_file["data"]["train"] + "centers_init.npy")
 
    # get the hyperparameters of the config file
     dic_hyperparameters = get_hyperparameters(cfg_path)
@@ -52,7 +51,7 @@ def test(cfg_path, model, data_set, mode_forced, mode, lap = "0"):
                        + datetime.now().strftime("%d.%m.%Y-%H:%M:%S") + "\n" + str_hyperparameters
     elif mode == "final":
         path_log_dir = cfg_file["model"]["path"] + "log_test_mode_" + str(mode_forced) \
-                       + "\n" + str_hyperparameters
+                       + datetime.now().strftime("%d.%m.%Y-%H:%M:%S") + "\n" + str_hyperparameters
 
     writer = create_writer(path_log_dir)
 
@@ -68,12 +67,12 @@ def test(cfg_path, model, data_set, mode_forced, mode, lap = "0"):
 
     train_dataset, test_dataset = data_set
 
-    # if mode_forced == 'test' and mode == 'final':
-    test_loader = DataLoader(dataset = test_dataset, batch_size = batch_size, shuffle = False)
-    centers_true = np.load(cfg_file["data"]["test"] + "centers_test.npy")
-    # elif mode_forced == 'train' or mode == 'evolution':
-    #     test_loader = DataLoader(dataset = train_dataset, batch_size = batch_size, shuffle = False)
-    #     centers_true = np.load(cfg_file["data"]["train"] + "centers_train.npy")
+    if mode_forced == 'test' and mode == 'final':
+        test_loader = DataLoader(dataset = test_dataset, batch_size = batch_size, shuffle = False)
+        centers_true = np.load(cfg_file["data"]["test"] + "centers_test.npy")
+    elif mode_forced == 'train' or mode == 'evolution':
+        test_loader = DataLoader(dataset = train_dataset, batch_size = batch_size, shuffle = False)
+        centers_true = np.load(cfg_file["data"]["train"] + "centers_train.npy")
 
     if mode == "evolution":
         print("Starting lap {} for evolution on {} data in mode {}...".format(lap, cfg_file["data"]["data_set"],
@@ -82,7 +81,7 @@ def test(cfg_path, model, data_set, mode_forced, mode, lap = "0"):
         print("Starting testing on {} data in mode {}...".format(cfg_file["data"]["data_set"], mode_forced))
 
     # numpy array to store the vectors in the latent space for each sample
-    H_2D = None
+    H_latent = None
     H1_2D = None
     H2_2D = None
     X_input = None
@@ -107,55 +106,63 @@ def test(cfg_path, model, data_set, mode_forced, mode, lap = "0"):
         # Resize the input accordingly
         x = x.view(-1, model.input_dim)
 
-        x_numpy = x.detach().numpy()
+        x_numpy = x.cpu().detach().numpy()
 
         h = model.encoder(x)
 
         # Get the reconstruction from the autoencoder
         x_reconstructed = model.decoder(h)
-        x_reconstructed_numpy = x_reconstructed.detach().numpy()
-        h_numpy = h.detach().numpy()
+        x_reconstructed_numpy = x_reconstructed.cpu().cpu().detach().numpy()
+        h_numpy = h.cpu().detach().numpy()
 
         if batch_idx == 0:
             X_input = x_numpy
             X_reconstructed = x_reconstructed_numpy
-            H_2D = h_numpy
+            H_latent = h_numpy
             labels = y
         else:
             X_input = np.vstack((X_input, x_numpy))
             X_reconstructed = np.vstack((X_reconstructed, x_reconstructed_numpy))
-            H_2D = np.vstack((H_2D, h_numpy))
+            H_latent = np.vstack((H_latent, h_numpy))
             labels = np.hstack((labels, y))
 
         if cfg_file["data"]["data_set"] == "mnist":
             if show_images and batch_idx < images_to_show:
                 # resize the tensor to see the image
-                img_reconstructed = x_reconstructed.view(-1, 28, 28).detach().numpy()[idx_random]
+                img_reconstructed = x_reconstructed.view(-1, 28, 28).cpu().detach().numpy()[idx_random]
                 list_images.append((img_original, img_reconstructed))
 
-    H_2D_tensor = torch.from_numpy(H_2D)
+    H_latent_tensor = torch.from_numpy(H_latent).to(DEVICE)
 
 
-    # run k-means on the data
-    # start with the same centers
-    centers_init = np.load(cfg_file["data"]["train"] + "centers_init.npy")
-    centers_k_means, predicitons_kmeans = k_means(X=X_input, centers_init=centers_init, n_clusters=num_classes)
+    # run k-means on latent space
+    centers_k_means, predicitons_kmeans = k_means(X=H_latent, centers_init='k-means++', n_clusters=num_classes)
+
+    # run k-means on latent space
+    if type_dist == "points":
+        centers_latent = centers_k_means
+        np.save(cfg_file["data"]["train"] + "rep_latent", centers_latent)
+    elif type_dist == "segments":
+        rep_latent = PCA_proporcional_dist(H_latent, num_classes, percentage_K)
+        rep_latent = rep_latent.cpu().detach().numpy()
+        np.save(cfg_file["data"]["train"] + "rep_latent", rep_latent)
 
 
     if type_dist == "points":
         centers_rec = model.decoder(model.rep)
-        centers_rec_numpy = centers_rec.detach().numpy()
+        centers_rec_numpy = centers_rec.cpu().detach().numpy()
         # compute the distances to the learned representatives
         rep = model.rep
-        centers_latent = rep.detach().numpy()
-        dist = pairwise_distances(H_2D_tensor, rep)
+        centers_latent = rep.cpu().detach().numpy()
+        dist = pairwise_distances(H_latent_tensor, rep)
         list_rep = [centers_true, centers_rec_numpy, centers_latent, centers_k_means]
+        list_inter = [None, None, None, None]
     elif type_dist == "segments":
         s1 = model.rep[:,:latent_dim]
         s2 = model.rep[:,latent_dim:]
         s_inter = get_interpolation(s1, s2, num_points_inter)
-        s_inter_latent = s_inter.detach().numpy()
-        s_latent = model.rep.detach().numpy()
+        s_inter_latent = s_inter.cpu().detach().numpy()
+        s_latent = model.rep.cpu().detach().numpy()
 
         print("s1 shape: ", s1.shape)
         print("s2 shape: ", s2.shape)
@@ -163,18 +170,20 @@ def test(cfg_path, model, data_set, mode_forced, mode, lap = "0"):
         s1_rec = model.decoder(s1)
         s2_rec = model.decoder(s2)
         s_inter_rec = model.decoder(s_inter)
-        s_inter_rec_np = s_inter_rec.detach().numpy()
+        s_inter_rec_np = s_inter_rec.cpu().detach().numpy()
 
         print("shape s_inter_rec_np = ", s_inter_rec_np.shape)
 
+
         s_rec = torch.cat((s1_rec, s2_rec), 1)
-        s_rec_numpy = s_rec.detach().numpy()
+        s_rec_numpy = s_rec.cpu().detach().numpy()
         #print("s_rec_numpy: ", s_rec_numpy)
-        dist = pairwise_distances_segments(H_2D_tensor, model.rep)
-        list_rep = [centers_true, s_rec_numpy, s_latent, centers_k_means, s_inter_rec_np, s_inter_latent]
+        dist = pairwise_distances_segments(H_latent_tensor, model.rep)
+        list_rep = [centers_true, s_rec_numpy, s_latent, centers_k_means]
+        list_inter = [None, s_inter_rec_np, s_inter_latent, None]
 
 
-    dist_numpy = dist.detach().numpy()
+    dist_numpy = dist.cpu().detach().numpy()
 
 
     # compute the accuracy
@@ -184,16 +193,18 @@ def test(cfg_path, model, data_set, mode_forced, mode, lap = "0"):
     purity = get_purity(labels, predictions)
     NMI = get_NMI(labels, predictions)
     ARI = get_ARI(labels, predictions)
-    metrics = ["purity = " + str(purity), "NMI = " + str(NMI), "ARI = " + str(ARI)]
+    metrics = ["ACC = " + str(purity), "NMI = " + str(NMI), "ARI = " + str(ARI)]
+
+
 
     # metrics for vanilla k-means
     purity_kmeans = get_purity(labels, predicitons_kmeans)
     NMI_kmeans = get_NMI(labels, predicitons_kmeans)
     ARI_kmeans = get_ARI(labels, predicitons_kmeans)
-    metrics_kmeans = ["purity = " + str(purity_kmeans), "NMI = " + str(NMI_kmeans), "ARI = " + str(ARI_kmeans)]
+    metrics_kmeans = ["ACC = " + str(purity_kmeans), "NMI = " + str(NMI_kmeans), "ARI = " + str(ARI_kmeans)]
 
 
-    metrics = ["purity = "+str(purity), "NMI = " +str(NMI), "ARI = " +str(ARI)]
+
 
     if show_images:
         writer.add_figure('originals vs reconstructed', imshow(list_images))
@@ -212,39 +223,44 @@ def test(cfg_path, model, data_set, mode_forced, mode, lap = "0"):
 
 
         # make the list for the outputs (inputs) of the auto-encoder
-        list_X = [X_input, X_reconstructed, H_2D, X_input]
+        list_X = [X_input, X_reconstructed, H_latent, H_latent]
 
-        titles = ["Input(" + dist_classes + ")", "Reconstruction", "Latent Space", "k-means on Input data"]
+        titles = ["Input", "Reconstruction", "Latent Space", "k-means on Latent Space "
+                                                             ""]
 
         writer.add_figure('01 Visualization of Encoder outputs (or inputs)',
                           plot_2D_visualization_clusters(list_X = list_X, labels = labels,
                                                          predictions_kmeans = predicitons_kmeans, predictions = predictions,
-                                                         list_rep = list_rep, titles=titles, num_classes=num_classes,
+                                                         list_rep = list_rep, list_inter = list_inter,
+                                                         titles=titles, num_classes=num_classes,
                                                          metrics=metrics, metrics_kmeans= metrics_kmeans,
                                                          type_dist=type_dist))
 
 
         # TODO: Consider to put the following code in a different module
         # code for visualization of clustering in latent space
-        # centers_k_means, labels_k_means = k_means(H_2D, n_clusters = num_classes)
+        # centers_k_means, labels_k_means = k_means(H_latent, n_clusters = num_classes)
         # title = "K-means on encoder output on {} data in mode {}".format(cfg_file["data"]["data_set"],
         #                                                                                   mode_forced)
         #
         # writer.add_figure('02 Visualization of k-means on {} data in latent space 2D'.format(mode_forced),
-        #                   plot_X2D_visualization(H_2D, labels_k_means, title=title, num_classes=num_classes,
+        #                   plot_X2D_visualization(H_latent, labels_k_means, title=title, num_classes=num_classes,
         #                                          cluster_centers=centers_k_means))
         #
         # leave the repeated code, because otherwise the last added image does not appear.
         # It seems to be a bug from tensorboard, although more investigation is required.
         # writer.add_figure('02 Visualization of k-means on {} data in latent space 2D'.format(mode_forced),
-        #                   plot_X2D_visualization(H_2D, labels_k_means, title=title, num_classes=num_classes,
+        #                   plot_X2D_visualization(H_latent, labels_k_means, title=title, num_classes=num_classes,
         #                                          cluster_centers=centers_k_means))
 
 
     if mode == "evolution":
+        print(metrics)
         print("Lap {} for evolution DONE!".format(lap))
+
     elif mode == "final":
+        print (metrics)
         print("Final testing DONE!")
         writer.close()
 
-    return None
+    return purity, NMI, ARI

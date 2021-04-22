@@ -2,6 +2,7 @@
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 import torch
+from constants import DEVICE
 
 
 class SyntheticDataset(Dataset):
@@ -32,7 +33,7 @@ class SyntheticDataset(Dataset):
             x: data
             y: label
         """
-        x = torch.from_numpy(self.data[idx]).type(torch.FloatTensor)
+        x = torch.from_numpy(self.data[idx]).type(torch.FloatTensor).to(DEVICE)
         y = self.labels[idx]
 
         return x, y

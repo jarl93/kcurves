@@ -2,7 +2,9 @@
 import numpy as np
 from helpers import load_config, Read_Two_Column_File, Read_One_Column_File
 from data import SyntheticDataset
+from sklearn.datasets import fetch_openml
 from torchvision import datasets, transforms
+import torch
 def load_data_set(cfg_path, verbose = True):
     """
     Add documentation
@@ -16,16 +18,53 @@ def load_data_set(cfg_path, verbose = True):
         print("Loading dataset...")
 
     if cfg_file["data"]["data_set"] == "mnist":
-        path_data = cfg_file["data"]["train"]
 
-        train_dataset = datasets.MNIST(root = path_data, train = True,
-                                       transform = transforms.Compose([transforms.ToTensor(),
-                                                                        transforms.Normalize((0.1306,), (0.3081,))]),
-                                       download = True)
-        test_dataset = datasets.MNIST(root = path_data, train=False,
-                                      transform=transforms.Compose([transforms.ToTensor(),
-                                                                    transforms.Normalize((0.1325,), (0.3105,))]),
-                                      download = False)
+        #path_data = cfg_file["data"]["train"]
+
+        mnist = fetch_openml('mnist_784', version=1, cache=True)
+
+        # scale data
+        X = mnist.data / 255.0
+        Y = mnist.target.astype(np.int64)
+
+        full_training = cfg_file["data"]["full_training"]
+        validation = cfg_file["data"]["validation"]
+
+        if full_training:
+            if validation:
+                idx_test = Read_One_Column_File('./split/mnist/validation', 'int')
+            else:
+                idx_test = Read_One_Column_File('./split/mnist/test', 'int')
+            X_train = X
+            Y_train = Y
+        else:
+            idx_train = Read_One_Column_File('./split/mnist/train_20', 'int')
+            if validation:
+                idx_test = Read_One_Column_File('./split/mnist/validation_20', 'int')
+            else:
+                idx_test = Read_One_Column_File('./split/mnist/test_20', 'int')
+            X_train = X[idx_train]
+            Y_train = Y[idx_train]
+
+        X_test = X[idx_test]
+        Y_test = Y[idx_test]
+
+        train_dataset = SyntheticDataset(data = X_train, labels = Y_train)
+        test_dataset = SyntheticDataset(data = X_test, labels = Y_test)
+
+        if verbose:
+            print("Shape X_train: ", X_train.shape)
+            print("Shape Y_train: ", Y_train.shape)
+            print("Shape X_test: ", X_test.shape)
+            print("Shape Y_test: ", Y_test.shape)
+
+
+        # centers
+        num_classes = cfg_file["data"]["num_classes"]
+        input_dim = cfg_file["model"]["input_dim"]
+        centers_train = np.zeros((num_classes, input_dim))
+        np.save(cfg_file["data"]["train"]+ "centers_train", centers_train)
+        np.save(cfg_file["data"]["test"] + "centers_test", centers_train)
 
 
     elif cfg_file["data"]["data_set"] == "synthetic_functions" or \
@@ -47,10 +86,10 @@ def load_data_set(cfg_path, verbose = True):
             print("Shape Y_test: ", Y_test.shape)
 
     elif cfg_file["data"]["data_set"] == "basic_benchmarking":
-        X_train = Read_Two_Column_File(cfg_file["data"]["train_data"])
-        centers_train = Read_Two_Column_File(cfg_file["data"]["train_centers"])
+        X_train = Read_Two_Column_File(cfg_file["data"]["train_data"], 'float')
+        centers_train = Read_Two_Column_File(cfg_file["data"]["train_centers"], 'float')
         X_train, centers_train = normalize_data(X_train, centers_train)
-        Y_train = Read_One_Column_File(cfg_file["data"]["train_labels"])
+        Y_train = Read_One_Column_File(cfg_file["data"]["train_labels"], 'float')
         # use labels starting at 0
         Y_train = Y_train - 1
 

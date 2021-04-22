@@ -47,6 +47,7 @@ def train(cfg_path, model, data_set, verbose = True):
     #  now the training is the same for all data sets
 
     alpha_init = cfg_file["train"]["alpha_init"] # temperature hyperparameter (alpha)
+    alpha_type = cfg_file["train"]["alpha_type"]
     annealing_frequency_change = cfg_file["train"]["annealing_frequency_change"] # frequency to perform annealing
     beta_type = cfg_file["train"]["beta_type"]
     beta_init = cfg_file["train"]["beta_init"]
@@ -87,7 +88,7 @@ def train(cfg_path, model, data_set, verbose = True):
     print("Starting training on {}...".format(cfg_file["data"]["data_set"]))
 
     # use Adam optmizer
-    optimizer = optim.Adam(model.parameters(), lr = lr, weight_decay = lambda_)
+    optimizer = optim.Adam(model.parameters(), lr = lr)
 
     model.train()
 
@@ -111,36 +112,43 @@ def train(cfg_path, model, data_set, verbose = True):
                 path = cfg_file["model"]["evolution_path"] + cfg_file["model"]["name"] + "_lap_" + lap_str
                 torch.save(model.state_dict(), path)
 
-            test(cfg_path=cfg_path, model=model, data_set=data_set, mode_forced='train',
-                 mode="evolution", lap=lap_str)
+            _, _, _ = test(cfg_path=cfg_path, model=model, data_set=data_set, mode_forced='train',
+                           mode="evolution", lap=lap_str)
             lap += 1
 
 
         # anneal hyperparameters following the scheme
-        if epoch < epochs_warmup or True:
+        if epoch < epochs_warmup:
             beta_ = 0
             gamma_ = 0
             if epoch + 1 == epochs_warmup:
-                rep_np = np.load(cfg_file["data"]["train"] + "rep_init.npy")
-                rep = model.get_rep(rep_np)
-                model.set_rep(rep)
+
+                rep_latent = np.load(cfg_file["data"]["train"] + "rep_latent.npy")
+                rep = torch.tensor(rep_latent).type(torch.FloatTensor).to(device)
+                # update the representatives
+                model_dict = model.state_dict()
+                model_dict['rep'] = rep
+                model.load_state_dict(model_dict)
+
+                path = cfg_file["model"]["evolution_path"] + cfg_file["model"]["name"] + "_lap_" + "initialization_centers"
+                torch.save(model.state_dict(), path)
+                _, _, _ = test(cfg_path=cfg_path, model=model, data_set=data_set, mode_forced='train',
+                               mode="evolution", lap="initialization_centers")
+                beta_ = beta_init
+                gamma_ = gamma_init
         else:
             if (epoch + 1) % annealing_frequency_change == 0:
-                alpha_ = 2 ** (1/np.log(n_alpha) ** 2) * alpha_
-                n_alpha += 1
-                if gamma_type == "fixed":
-                    gamma_ = gamma_init
-                else:
+                if  alpha_type != "fixed":
+                    alpha_ = 2 ** (1/np.log(n_alpha) ** 2) * alpha_
+                    n_alpha += 1
+                if gamma_type != "fixed":
                     gamma_ = 0.5 ** (1/np.log(n_gamma) ** 2) * gamma_
                     n_gamma += 1
-
-                if beta_type == "fixed":
-                    beta_ = beta_init
-                else:
+                if beta_type != "fixed":
                     beta_ = 1.5 ** (1/np.log(n_beta)**2)  * beta_
                     n_beta += 1
 
-
+        print("Train epoch = {}, beta = {}, gamma = {}, alpha = {}".format(epoch, beta_, gamma_, alpha_))
 
         train_loss = 0
         for batch_idx, data_batch in enumerate(train_loader):

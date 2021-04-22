@@ -4,28 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import sys
-from helpers import  pairwise_distances, pairwise_distances_segments
+from helpers import  pairwise_distances, pairwise_distances_segments, get_hidden_layers
 
 # As long as PyTorch operations are employed the loss.backward should work
-
-def get_hidden_layers(autoencoder):
-    """
-    Gets the hidden layers of a given autoencoder.
-    :param autoencoder:
-    :return: lyers: list with the hidden layers
-    """
-    # Get the hidden layers from the encoder and the decoder
-    layers_encoder = list(autoencoder.encoder.children())
-    layers_decoder = list(autoencoder.decoder.children())
-
-    # Most of the layers are embedded in a nn.ModuleList(),
-    # but we should consider as well the output layers
-    # (linear and non-linear) from the encoder and decoder
-    layers = list(layers_encoder[0]) + [layers_encoder[1], layers_encoder[2]] \
-             + list(layers_decoder[0]) + [layers_decoder[1], layers_decoder[2]]
-
-    return layers
-
 
 def L1_regularization(autoencoder, x, lambda_):
     """
@@ -99,6 +80,7 @@ def loss_function(model, x, x_reconstructed, h, rep, alpha_, beta_, gamma_, type
     if type_dist == "points":
         # compute the distance matrix between the batch of points and the representatives
         dist = pairwise_distances(h, rep)
+
     elif type_dist == "segments":
         dist = pairwise_distances_segments(h, rep)
         diff = rep[:, dim:] - rep[:, :dim]
@@ -107,20 +89,24 @@ def loss_function(model, x, x_reconstructed, h, rep, alpha_, beta_, gamma_, type
     elif type_dist == "axes":
         dist = torch.abs(h)
 
+    # compute the minimum for numerical stability in the softmax function
+    min_dist, _ = torch.min(dist, dim=1)
+    min_dist = min_dist.view(-1,1).repeat(1,dist.shape[1])
+
     if type_loss == "dist":
         # relaxation of the Indicator function by means of the softmax function
-        I_relaxed = F.softmax(-1 * alpha_ * dist, dim = 1)
+        I_relaxed = F.softmax(-1 * alpha_ * (dist - min_dist), dim = 1)
         # compute the loss by multiplying the Indicator function and the distance
-        loss_dist = beta_ * (1/I_relaxed.shape[0]) * torch.sum(I_relaxed * dist)
+        loss_dist = beta_ * torch.mean(torch.sum(I_relaxed * dist, dim = 1))
         loss_dist = check_non_neagtive_loss(loss_dist, "loss_dist", x, x_reconstructed)
         loss_batch += loss_dist
         return loss_batch, loss_rec, loss_dist
     elif type_loss == "log_dist":
         # relaxation of the Indicator function by means of the softmax function
-        I_relaxed = F.softmax(-1 * alpha_ * dist, dim=1)
+        I_relaxed = F.softmax(-1 * alpha_ * (dist - min_dist), dim=1)
         # compute the loss by multiplying the Indicator function and the distance
         eps = 0.1 * torch.ones_like(dist)
-        loss_dist_log = beta_ * (1 / I_relaxed.shape[0]) * torch.sum(I_relaxed * torch.log(dist+eps))
+        loss_dist_log = beta_ * torch.mean(torch.sum(I_relaxed * torch.log(dist+eps), dim = 1))
         loss_batch += loss_dist_log
         return loss_batch, loss_rec, loss_dist_log
 

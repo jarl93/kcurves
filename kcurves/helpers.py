@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 import yaml
 from torch.utils.tensorboard import SummaryWriter
 import torch
@@ -12,6 +13,8 @@ from torch import linalg as LA
 from sklearn import metrics
 from sklearn.metrics.cluster import normalized_mutual_info_score
 from sklearn.metrics.cluster import adjusted_rand_score
+from sklearn.utils.linear_assignment_ import linear_assignment
+from constants import DEVICE
 import pylab as pl
 from matplotlib import collections  as mc
 from matplotlib import colors as mcolors
@@ -81,8 +84,8 @@ def plot_X2D_visualization(X, labels, title, num_classes, cluster_centers=None):
 
     return fig
 
-def plot_2D_visualization_clusters(list_X, labels, predictions_kmeans, predictions, list_rep, titles,
-                                   num_classes, metrics, metrics_kmeans, type_dist):
+def plot_2D_visualization_clusters(list_X, labels, predictions_kmeans, predictions, list_rep, list_inter,
+                                   titles, num_classes, metrics, metrics_kmeans, type_dist):
     """
     Visualizes outputs (inputs) of the auto-encoder.
     :param list_X: List [X_input, X_reconstructed, H, softmax(H)], where:
@@ -96,35 +99,72 @@ def plot_2D_visualization_clusters(list_X, labels, predictions_kmeans, predictio
     :param num_classes: Number of classes.
     :return: fig: figure with the plots.
     """
-    cdict = {0: 'darkgreen', 1: 'gold', 2: 'olive', 3: 'brown', 4: 'coral',
-             5: 'yellow', 6: 'tan', 7: 'brown', 8: 'salmon', 9: 'gray',
-             10: 'indigo', 11: 'sienna', 12: 'khaki', 13: 'lavender', 14: 'lime'}
-    list_pca_trans = []
+    cdict_points = {0: 'silver', 1: 'lightcoral', 2: 'peachpuff', 3: 'bisque', 4: 'cornsilk',
+                    5: 'lightgreen', 6: 'lightcyan', 7: 'lightskyblue', 8: 'thistle', 9: 'magenta'}
+    cdict_rep = {0: 'black', 1: 'red', 2: 'saddlebrown', 3: 'darkorange', 4: 'gold',
+                 5: 'green', 6: 'cyan', 7: 'deepskyblue', 8: 'darkviolet', 9: 'darkmagenta'}
+
+    list_X_full = []
     list_dim = []
+    size_batch = list_X[0].shape[0]
     for i in range(len(list_X)):
-        list_dim.append(list_X[i].shape[1])
-        if list_X[i].shape[1] > 2:
-            print("Running PCA...")
-            list_X[i], pca_trans = run_PCA(list_X[i])
-            list_pca_trans.append(pca_trans)
-        else:
-            list_pca_trans.append(None)
+        X = list_X[i]
+        dim = X.shape[1]
+        list_dim.append(dim)
+        rep = list_rep[i]
+        s_inter = list_inter[i]
+        if type_dist == "points":
+            X_full = np.vstack((X, rep))
+        elif type_dist == "segments":
+            X_full = np.vstack((X, rep[:,:dim]))
+            if i == 1 or i ==2:
+                X_full = np.vstack((X_full, rep[:, dim:]))
+            if s_inter is not None:
+                X_full = np.vstack((X_full, s_inter))
+        print("i = {}, X_full shape = {}".format(i, X_full.shape))
+        list_X_full.append(X_full)
+
+    for i in range(len(list_X_full)):
+        if list_X_full[i].shape[1] > 2:
+            if i <= 1:
+                print("Running PCA...")
+                list_X_full[i] = run_PCA(list_X_full[i])
+            else:
+                print("Runnning TSNE...")
+                list_X_full[i] = run_TSNE(list_X_full[i])
+
+    for i in range(len(list_X_full)):
+        X_full = list_X_full[i]
+        print("i = {}, X_full shape = {}".format(i, X_full.shape))
+        dim = list_dim[i]
+        X = X_full[:size_batch, :]
+        if type_dist == "points" or i == 0 or i ==3:
+            rep = X_full[size_batch:size_batch+num_classes,:]
+            s_inter = None
+        elif type_dist == "segments":
+            rep = X_full[size_batch:size_batch+2*num_classes, :]
+            s_inter = X_full[size_batch+2*num_classes:, :]
+
+        list_X[i] = X
+        list_rep[i] = rep
+        list_inter[i] = s_inter
 
 
     list_cx = [0, 0, 1, 1]
     list_cy = [0, 1, 0, 1]
 
     plt.switch_backend('agg')
-    fig, axs = plt.subplots(2, 2, figsize=(10, 10))
+    fig, axs = plt.subplots(2, 2, figsize=(10, 10), constrained_layout=True)
 
     for i in range(len(list_X)):
         cx = list_cx[i]
         cy = list_cy[i]
-        X  = list_X[i]
-        dim = list_dim[i]
-        title = titles[i]
+        X = list_X[i]
         rep = list_rep[i]
-        pca_trans = list_pca_trans[i]
+        s_inter = list_inter[i]
+        title = titles[i]
+
+
         # loop to plot the clusters depending on the given labels
         for j in range(num_classes):
             if i == 0:
@@ -133,50 +173,42 @@ def plot_2D_visualization_clusters(list_X, labels, predictions_kmeans, predictio
                 idx = np.where(predictions_kmeans == j)
             else:
                 idx = np.where(predictions == j)
-            axs[cx, cy].scatter(X[idx, 0], X[idx, 1], color = cdict[j], linewidths = 0.1, alpha = 0.5)
+            axs[cx, cy].scatter(X[idx, 0], X[idx, 1], color = cdict_points[j], linewidths = 0.1, alpha = 0.1)
             axs[cx, cy].set_title(title)
             if i == 3:
-                axs[cx, cy].legend(metrics_kmeans)
+                axs[cx, cy].legend(metrics_kmeans,  bbox_to_anchor=(1.3, 1.3 ))
+
 
 
         # first point of the segments
-        s1 = rep[:, :dim]
+        s1 = rep[:num_classes, :]
 
-        if pca_trans is not None:
-            s1 = pca_trans.transform(s1)
+        for j in range(num_classes):
+            axs[cx, cy].scatter(s1[j, 0], s1[j, 1], marker= '^', color=cdict_rep[j], linewidths=2, alpha=1)
+        #axs[cx, cy].scatter(s1[:, 0], s1[:, 1], marker= '^', color='black', linewidths=2, alpha=1)
 
-        axs[cx, cy].scatter(s1[:, 0], s1[:, 1], color='red', linewidths=0.75, alpha=1)
+        if i == 1 or i == 2:
+            if type_dist == "segments":
+                # second point of the segments and interpolation points
+                s2 = rep[num_classes:, :]
 
-        if (i == 1 or i == 2) and type_dist == "segments":
+                # code to draw points from interpolation
+                #axs[cx, cy].scatter(s2[:, 0], s2[:, 1], marker= 'v', color='black', linewidths=2, alpha=1)
+                for j in range(num_classes):
+                    axs[cx, cy].scatter(s2[j, 0], s2[j, 1], marker= 'v', color=cdict_rep[j], linewidths=2, alpha=1)
+                    idx_j = np.arange(j, s_inter.shape[0], num_classes)
+                    axs[cx, cy].scatter(s_inter[idx_j, 0], s_inter[idx_j, 1], marker= '*', color=cdict_rep[j], linewidths=1, alpha=1)
 
-            # second point of the segments and interpolation points
-            s2 = rep[:, dim:]
 
-            s_inter = list_rep[i + 3]
-            if pca_trans is not None:
-                s2 = pca_trans.transform(s2)
-                s_inter = pca_trans.transform(s_inter)
+                # code to draw lines in 2-D
+                # if i==2:
+                #     rep_reshaped = rep.reshape(-1, dim, dim)
+                #     lc = mc.LineCollection(rep_reshaped, colors='black', linewidths=2)
+                #     axs[cx, cy].add_collection(lc)
 
-            axs[cx, cy].scatter(s2[:, 0], s2[:, 1], color='green', linewidths=0.75, alpha=1)
-
-            # code to draw points from interpolation
-            if i == 1:
-                axs[cx, cy].scatter(s_inter[:, 0], s_inter[:, 1], color='black', linewidths=0.1, alpha=1)
-
-            # code to draw lines in 2-D
-            if i==2:
-                rep_reshaped = rep.reshape(-1, dim, dim)
-                lc = mc.LineCollection(rep_reshaped, colors='black', linewidths=2)
-                axs[cx, cy].add_collection(lc)
-
-            axs[cx, cy].legend(metrics)
+            axs[cx, cy].legend(metrics, bbox_to_anchor=(1.3, 1.3))
 
         axs[cx, cy].set_aspect('equal')
-
-
-
-
-
 
     # -----------------------------Frozen code-------------------------------
     # x_i, y_i, z_i_ent, z_i_dist = list_vars
@@ -275,10 +307,10 @@ def get_interpolation(s1, s2, num_points):
 
     dim0 = s1.shape[0]
     dim1 = s1.shape[1]
-    s1 = s1.repeat(num_points, 1)
-    s2 = s2.repeat(num_points, 1)
+    s1 = s1.repeat(num_points - 1, 1)
+    s2 = s2.repeat(num_points - 1, 1)
 
-    s_alphas = torch.tensor(np.linspace(0,1,num_points)).type(torch.FloatTensor)
+    s_alphas = torch.tensor(np.linspace(1/num_points,1 ,num_points)[:-1]).type(torch.FloatTensor).to(DEVICE)
     s_alphas = s_alphas.view(1,-1).repeat(dim0, 1).T.reshape(-1,1).repeat(1, dim1)
     print("s1 shape: ", s1.shape)
     print("s2 shape: ", s2.shape)
@@ -326,7 +358,14 @@ def run_PCA(X, n_components=2):
     pca_trans = pca.fit(X)
     X_pca = pca_trans.transform(X)
 
-    return X_pca, pca_trans
+    return X_pca
+
+def run_TSNE(X, n_components=2):
+    """
+    """
+    X_tsne = TSNE(n_components = n_components, random_state=0).fit_transform(X)
+
+    return X_tsne
 
 def sigmoid(x):
     """
@@ -348,12 +387,12 @@ def get_softmax(X_2D):
     """
 
     if type(X_2D) is np.ndarray:
-        T_2D = torch.from_numpy(X_2D)
+        T_2D = torch.from_numpy(X_2D).to(DEVICE)
     else:
         T_2D = X_2D
 
     T_2D_softmax = F.softmax(T_2D, dim = 1)
-    X_2D_softmax = T_2D_softmax.detach().numpy()
+    X_2D_softmax = T_2D_softmax.cpu().detach().numpy()
 
     return X_2D_softmax
 
@@ -556,30 +595,65 @@ def unfreeze_module(module):
 
     return None
 
-def Read_Two_Column_File(file_name):
+def Read_Two_Column_File(file_name, type_np):
     with open(file_name, 'r') as f_input:
         csv_input = csv.reader(f_input, delimiter=' ', skipinitialspace=True)
         x = []
         y = []
         for cols in csv_input:
-            x.append(float(cols[0]))
-            y.append(float(cols[1]))
+            if type_np == 'float':
+                x.append(float(cols[0]))
+                y.append(float(cols[1]))
+            else:
+                x.append(int(cols[0]))
+                y.append(int(cols[1]))
+
         X = np.vstack((x, y))
     return X.T
 
-def Read_One_Column_File(file_name):
+def Read_One_Column_File(file_name, type_np):
     with open(file_name, 'r') as f_input:
         csv_input = csv.reader(f_input, delimiter=' ', skipinitialspace=True)
-        labels = []
+        entries = []
         for cols in csv_input:
-            labels.append(float(cols[0]))
-    return np.array(labels)
+            if type_np == 'float':
+                entries.append(float(cols[0]))
+            else:
+                entries.append(int(cols[0]))
+    return np.array(entries)
+
+
+def get_hidden_layers(autoencoder):
+    """
+    Gets the hidden layers of a given autoencoder.
+    :param autoencoder:
+    :return: lyers: list with the hidden layers
+    """
+    # Get the hidden layers from the encoder and the decoder
+    layers_encoder = list(autoencoder.encoder.children())
+    layers_decoder = list(autoencoder.decoder.children())
+
+    # Most of the layers are embedded in a nn.ModuleList(),
+    # but we should consider as well the output layers
+    # (linear and non-linear) from the encoder and decoder
+    layers = list(layers_encoder[0]) + [layers_encoder[1]] \
+             + list(layers_decoder[0]) + [layers_decoder[1]]
+
+    return layers
 
 # metrics to evaluate quality of the clustering
 def get_purity(labels, predictions):
 
-    confusion_matrix = metrics.cluster.contingency_matrix(labels, predictions)
-    purity_score = np.sum(np.amax(confusion_matrix, axis=0)) / np.sum(confusion_matrix)
+    #Based on the code from https://github.com/XifengGuo/IDEC-toy/blob/master/DEC.py)
+    assert len(labels) == len(predictions)
+    d = max(np.max(labels), np.max(predictions)) + 1
+    w = np.zeros((d,d))
+    for i in range(len(predictions)):
+        w[predictions[i], labels[i]] += 1
+
+    ind = linear_assignment(w.max() - w) # Optimal label mapping based on the Hungarian algorithm
+    i, j = zip(*ind)
+    purity_score = np.sum(w[i,j]) / len(predictions)
 
     return np.round(purity_score, 3)
 
